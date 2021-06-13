@@ -13,7 +13,7 @@ public class ECSProjectiles : ModuleRules
 			new string[]
 			{
 				"Core",		
-				"DeveloperSettings",
+				"DeveloperSettings",				
 			});
 			
 		
@@ -26,5 +26,19 @@ public class ECSProjectiles : ModuleRules
 				"SlateCore",
 				"MegaFLECS",
 			});
+
+		//If we are using Niagara, enable it here
+		if(true)
+        {
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"Niagara",
+			});
+			PublicDefinitions.Add("ECSPROJECTILES_NIAGARA=1");
+		}
+        else
+        {
+			PublicDefinitions.Add("ECSPROJECTILES_NIAGARA=0");
+		}
 	}
 }
