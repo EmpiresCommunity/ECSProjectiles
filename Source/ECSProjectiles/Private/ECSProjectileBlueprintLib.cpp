@@ -16,7 +16,6 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBullet(UObject* WorldContex
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
 
 	flecs::entity e = ECSWorld->entity()
-		.set<FECSWorldReference>({World})
 		.set<FECSActorEntity>({ actor })
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
 		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity });

@@ -12,7 +12,6 @@ void UECSProjectileModule_SimpleSim::InitializeComponents(TSharedPtr<flecs::worl
 	flecs::component<FECSBulletTransform>(*World.Get());
 	flecs::component<FECSBulletVelocity>(*World.Get());
 	flecs::component<FECSActorEntity>(*World.Get());
-	flecs::component<FECSWorldReference>(*World.Get());
 }
 
 
@@ -34,11 +33,15 @@ namespace FProjectileSimpleSim
 		}
 	}
 
-	void UpdateProjectilePositions(flecs::entity e, FECSBulletTransform& tform, FECSBulletVelocity& velocity, const FECSWorldReference& worldref)
+	void UpdateProjectilePositions(flecs::entity e, FECSBulletTransform& tform, FECSBulletVelocity& velocity)
 	{
 		const float DeltaTime = e.delta_time();
 
-		UWorld* World = worldref.World.Get();
+		UWorld* World = (UWorld*)e.world().get_context();
+		if (!IsValid(World))
+		{
+			return;
+		}
 				
 		tform.PreviousTransform = tform.CurrentTransform;
 
@@ -90,6 +93,6 @@ void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> 
 	World->system<FECSActorEntity, FECSBulletTransform>("Transform Actor Position to ECS")
 		.kind(flecs::PreUpdate)
 		.each(&FProjectileSimpleSim::TransformActorPostionToECS);
-	World->system<FECSBulletTransform, FECSBulletVelocity, FECSWorldReference>("Update Positions")
+	World->system<FECSBulletTransform, FECSBulletVelocity>("Update Positions")
 		.each(&FProjectileSimpleSim::UpdateProjectilePositions);
 }

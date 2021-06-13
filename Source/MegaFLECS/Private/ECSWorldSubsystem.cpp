@@ -20,6 +20,7 @@ void UECSWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	OnTickHandle = FTicker::GetCoreTicker().AddTicker(OnTickDelegate);
 
 	ECSWorld = TSharedPtr<flecs::world>(new flecs::world());
+	ECSWorld->set_context(GetWorld());
 
 	const UMegaFLECSDeveloperSettings* DevSettings = GetDefault<UMegaFLECSDeveloperSettings>();
 

@@ -22,11 +22,6 @@ struct FECSActorEntity
 	TSoftObjectPtr<AActor> Actor;
 };
 
-struct FECSWorldReference
-{
-	TSoftObjectPtr<UWorld> World;
-};
-
 /**
  * 
  */
