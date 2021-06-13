@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "ECSProjectiles",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "Megafunk, RoyAwesome, and the Empires Team",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "ECSProjectiles",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "MegaFLECS",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
