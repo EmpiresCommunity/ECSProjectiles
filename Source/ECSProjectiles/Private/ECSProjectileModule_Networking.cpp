@@ -24,13 +24,6 @@ namespace FECSNetworkingSystem
 		{
 			return;
 		}
-		
-		//We only create a networking actor if we are in a network situation, and a server one at that
-		bool bIsServer = World->GetNetMode() == NM_DedicatedServer || World->GetNetMode() == NM_ListenServer;
-		if (!bIsServer)
-		{
-			return;
-		}
 
 		for (int32 i = 0; i < itr.count(); i++)
 		{
@@ -42,8 +35,6 @@ namespace FECSNetworkingSystem
 			ActorHandles[i].NetworkActor = NetworkingActor;
 		}
 	}
-
-
 }
 
 void UECSProjectileModule_Networking::InitializeComponents(TSharedPtr<flecs::world> World)
@@ -64,6 +55,13 @@ void UECSProjectileModule_Networking::FinishInitialize(TSharedPtr<flecs::world> 
 	UWorld* WorldPtr = (UWorld*)World->get_context();
 
 	WorldPtr->OnActorsInitialized.AddLambda([World](const UWorld::FActorsInitializedParams& Params) {
+		//We only create a networking entity/actor if we are in a network situation, and a server one at that
+		bool bIsServer = Params.World->GetNetMode() == NM_DedicatedServer || Params.World->GetNetMode() == NM_ListenServer;
+		if (!bIsServer)
+		{
+			return;
+		}
+
 		World->set<FECSNetworkingSystem::FNetworkActorHandle>({});
 	});
 
