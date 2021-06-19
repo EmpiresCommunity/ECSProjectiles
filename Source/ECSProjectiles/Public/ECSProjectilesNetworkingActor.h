@@ -15,7 +15,7 @@ struct FReplicatedProjectileItem : public FFastArraySerializerItem
 public:
 
 	FECSBulletTransform Transform;
-	FECSBulletVelocity Velocity
+	FECSBulletVelocity Velocity;
 
 	//void PreReplicatedRemove(const struct FReplicatedProjectileArray& InArraySerializer);
 	//void PostReplicatedAdd(const struct FReplicatedProjectileArray& InArraySerializer);

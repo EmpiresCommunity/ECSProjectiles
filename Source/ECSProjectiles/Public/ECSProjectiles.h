@@ -4,3 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "EngineMinimal.h"
+
+namespace FECSProjectiles
+{
+	extern const FName NAME_ECSChannel;
+}
