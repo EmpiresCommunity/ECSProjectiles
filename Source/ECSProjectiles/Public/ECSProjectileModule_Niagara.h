@@ -13,6 +13,17 @@ struct FECSNiagaraHandle
 	FName LocationParameterName;
 	FName PreviousLocationParameterName;
 };
+//A Niagara system that is intended to render many projectiles at once. Perhaps one per visual projectile type?
+struct FECSNiagaraGroupHandle
+{
+	TWeakObjectPtr<class UNiagaraComponent> Component;
+	FName LocationsParameterName;
+	FName PreviousLocationsParameterName;
+	//this can't be the smart way to do things here...
+	TArray<FVector> ParticleLocations;
+	TArray<FVector> PreviousParticleLocations;
+
+};
 #endif 
 /**
  * 
