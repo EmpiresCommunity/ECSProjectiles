@@ -31,14 +31,10 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
 
-	//ECSWorld->get<>()
-	//create this 
+	
 	flecs::entity e = ECSWorld->entity()
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
-		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity })
-
-		;
-	//	.add_childof();
+		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity });
 	
 
 	
@@ -48,7 +44,8 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 void UECSProjectileBlueprintLib::SetTempNiagaraSingleton(UObject* WorldContextObject, FECSNiagaraGroupHandle NiagaraComponent)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
-
+	
+	//set singleton NiagaraGroupHandle
 	GetECSWorld(World)->set<FECSNiagaraGroupHandle>(NiagaraComponent);
 	
 }

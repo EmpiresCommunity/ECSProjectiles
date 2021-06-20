@@ -95,9 +95,6 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 	
 	World->system<FECSBulletTransform>("Write Projectile Positions Array to Niagara")
 		.kind(flecs::PreStore)
-		// .term<FECSNiagaraGroupHandle>()
-		// 	.superset(flecs::Childof)
-		//do we flecs::cascade here?
 		.iter(&FNiagaraECSSystem::UpdateNiagaraPositionsArray);
 #endif
 }

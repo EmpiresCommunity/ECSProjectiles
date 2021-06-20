@@ -25,7 +25,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
 	static FECSEntityHandle SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject,FString NiagaraBulletManagerName, FTransform SpawnTransform, float Velocity);
 
-
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
 	static void SetTempNiagaraSingleton(UObject* WorldContextObject, FECSNiagaraGroupHandle ComponentRef);
 
