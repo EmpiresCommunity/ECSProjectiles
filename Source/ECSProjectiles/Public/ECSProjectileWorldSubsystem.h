@@ -14,5 +14,7 @@ class ECSPROJECTILES_API UECSProjectileWorldSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 public:
+
+	AActor* NiagaraManager;
 	
 };

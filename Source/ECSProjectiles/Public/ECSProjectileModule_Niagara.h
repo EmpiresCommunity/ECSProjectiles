@@ -14,17 +14,24 @@ struct FECSNiagaraHandle
 	FName PreviousLocationParameterName;
 };
 //A Niagara system that is intended to render many projectiles at once. Perhaps one per visual projectile type?
+//this is intended to be used as a parent/instance of many bullet entities
+
+#endif
+USTRUCT(BlueprintType)
 struct FECSNiagaraGroupHandle
 {
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TWeakObjectPtr<class UNiagaraComponent> Component;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName LocationsParameterName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName PreviousLocationsParameterName;
 	//this can't be the smart way to do things here...
 	TArray<FVector> ParticleLocations;
 	TArray<FVector> PreviousParticleLocations;
 
 };
-#endif 
 /**
  * 
  */
@@ -37,4 +44,6 @@ public:
 	virtual void InitializeComponents(TSharedPtr<flecs::world> World);
 
 	virtual void InitializeSystems(TSharedPtr<flecs::world> World);
+
+
 };
