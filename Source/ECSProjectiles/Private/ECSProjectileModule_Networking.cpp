@@ -30,25 +30,7 @@ namespace FECSNetworkingSystem
 	{
 		int32 foo;
 	};
-
-	UECSNetworkingChannel* GetOrCreateECSNetworkingChannelForConnection(UNetConnection* Connection)
-	{
-		for (UChannel* Channel : Connection->Channels)
-		{
-			if (IsValid(Channel) && Channel->ChName == FECSProjectiles::NAME_ECSChannel)
-			{
-				return Cast<UECSNetworkingChannel>(Channel);
-			}
-		}
-
-		if (Connection->GetDriver()->IsKnownChannelName(FECSProjectiles::NAME_ECSChannel))
-		{
-			return Cast<UECSNetworkingChannel>(Connection->CreateChannelByName(FECSProjectiles::NAME_ECSChannel, EChannelCreateFlags::None));
-		}
-
-		return nullptr;
-	}
-
+	
 	void SpawnReplicationChannel(flecs::iter & itr, FNetworkChannelHandle* ChannelHandles)
 	{
 		UWorld* World = (UWorld*)itr.world().get_context();
@@ -65,7 +47,7 @@ namespace FECSNetworkingSystem
 			{
 				for (UNetConnection* Connection : NetDriver->ClientConnections)
 				{
-					if (UECSNetworkingChannel* Chan = GetOrCreateECSNetworkingChannelForConnection(Connection))
+					if (UECSNetworkingChannel* Chan = UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection))
 					{						
 						Chan->SendHello();
 					}
@@ -87,7 +69,7 @@ namespace FECSNetworkingSystem
 		{
 			for (UNetConnection* Connection : NetDriver->ClientConnections)
 			{
-				if (UECSNetworkingChannel* Chan = GetOrCreateECSNetworkingChannelForConnection(Connection))
+				if (UECSNetworkingChannel* Chan = UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection))
 				{
 					Chan->SendHello();
 				}
