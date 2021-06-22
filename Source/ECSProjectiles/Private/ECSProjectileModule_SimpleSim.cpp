@@ -70,7 +70,9 @@ namespace FProjectileSimpleSim
 		{
 			//TODO: If we've been stopped, we need to raise an event.
 			//Meanwhile, just stop us here
+			DesiredDestination = HitResult.ImpactPoint;
 			e.remove<FECSBulletVelocity>();
+			
 			
 		}
 
