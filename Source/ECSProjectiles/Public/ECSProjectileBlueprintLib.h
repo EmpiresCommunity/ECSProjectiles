@@ -23,10 +23,11 @@ public:
 	static FECSEntityHandle SpawnECSBullet(UObject* WorldContextObject, FTransform SpawnTransform, float Velocity, TSubclassOf<AActor> ProjectileActor);
 
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
-	static FECSEntityHandle SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject,FString NiagaraBulletManagerName, FTransform SpawnTransform, float Velocity);
+	static FECSEntityHandle SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject, FECSEntityHandle NiagaraEntityId, FTransform SpawnTransform, float Velocity);
 
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
-	static void SetTempNiagaraSingleton(UObject* WorldContextObject, FECSNiagaraGroupHandle ComponentRef);
+	static FECSEntityHandle SetTempNiagaraManagerEntity(UObject* WorldContextObject,
+	                                                    FECSNiagaraGroupProjectileHandle ComponentRef);
 
 private:
 	static TSharedPtr<flecs::world> GetECSWorld(UWorld* World);

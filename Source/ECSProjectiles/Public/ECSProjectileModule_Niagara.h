@@ -18,7 +18,7 @@ struct FECSNiagaraHandle
 
 #endif
 USTRUCT(BlueprintType)
-struct FECSNiagaraGroupHandle
+struct FECSNiagaraGroupProjectileHandle
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -30,6 +30,30 @@ struct FECSNiagaraGroupHandle
 	//this can't be the smart way to do things here...
 	TArray<FVector> ParticleLocations;
 	TArray<FVector> PreviousParticleLocations;
+
+	//This is required because an iterator is called for every ECS archetype.
+	//This gets incremented with the length of the iterator.
+	int32 IteratorOffset;
+
+
+};
+USTRUCT(BlueprintType)
+struct FECSNiagaraGroupHitHandle
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TWeakObjectPtr<class UNiagaraComponent> Component;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName LocationsParameterName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName HitNormalsParameterName;
+	//this can't be the smart way to do things here...
+	TArray<FVector> HitLocations;
+	TArray<FVector> HitNormals;
+
+	//This is required because an iterator is called for every ECS archetype.
+	//This gets incremented with the length of the iterator.
+	int32 IteratorOffset;
 
 };
 /**
