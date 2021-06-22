@@ -41,13 +41,16 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	return { e };
 }
 
-FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroupProjectileHandle NiagaraComponent)
+FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroupProjectileHandle NiagaraComponent,FECSNiagaraGroupHitHandle HitNiagaraComponent)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	
 	//make a NiagaraGroupHandle entity
-	auto e = GetECSWorld(World)->entity().set<FECSNiagaraGroupProjectileHandle>(NiagaraComponent);
-	return  e;
+	//future: make Niagara handles generic? two different entities? depends on how crazy we get here
+	
+	return GetECSWorld(World)->entity()
+		.set<FECSNiagaraGroupProjectileHandle>(NiagaraComponent)
+		.set<FECSNiagaraGroupHitHandle>(HitNiagaraComponent);
 	
 }
 

@@ -34,8 +34,6 @@ struct FECSNiagaraGroupProjectileHandle
 	//This is required because an iterator is called for every ECS archetype.
 	//This gets incremented with the length of the iterator.
 	int32 IteratorOffset;
-
-
 };
 USTRUCT(BlueprintType)
 struct FECSNiagaraGroupHitHandle
@@ -50,7 +48,6 @@ struct FECSNiagaraGroupHitHandle
 	//this can't be the smart way to do things here...
 	TArray<FVector> HitLocations;
 	TArray<FVector> HitNormals;
-
 	//This is required because an iterator is called for every ECS archetype.
 	//This gets incremented with the length of the iterator.
 	int32 IteratorOffset;
