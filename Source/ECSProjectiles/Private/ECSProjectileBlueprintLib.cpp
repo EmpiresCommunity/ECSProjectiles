@@ -47,7 +47,6 @@ FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject
 	
 	//make a NiagaraGroupHandle entity
 	auto e = GetECSWorld(World)->entity().set<FECSNiagaraGroupProjectileHandle>(NiagaraComponent);
-	UE_LOG(LogTemp,Warning,TEXT("Niagara entity: %i"),e.id())
 	return  e;
 	
 }
