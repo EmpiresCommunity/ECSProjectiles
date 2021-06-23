@@ -34,14 +34,16 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	
 	flecs::entity e = ECSWorld->entity()
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
-		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity });
+		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity })
+			.add<FECSNiagaraProjectileRelationComponent>(NiagaraEntityId.Entity);
+		//	.add<FECSNiagaraGroupProjectileManager>(GroupHitManagerEntityId);
+
 	
-	e.add_childof(NiagaraEntityId.Entity);
 	
 	return { e };
 }
 
-FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroupProjectileHandle NiagaraComponent,FECSNiagaraGroupHitHandle HitNiagaraComponent)
+FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroupManager NiagaraComponentHandle)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	
@@ -49,8 +51,7 @@ FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject
 	//future: make Niagara handles generic? two different entities? depends on how crazy we get here
 	
 	return GetECSWorld(World)->entity()
-		.set<FECSNiagaraGroupProjectileHandle>(NiagaraComponent)
-		.set<FECSNiagaraGroupHitHandle>(HitNiagaraComponent);
+		.set<FECSNiagaraGroupManager>(NiagaraComponentHandle);
 	
 }
 

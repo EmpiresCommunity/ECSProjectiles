@@ -17,8 +17,10 @@ void UECSProjectileModule_Niagara::InitializeComponents(TSharedPtr<flecs::world>
 {
 #if ECSPROJECTILES_NIAGARA
 	flecs::component<FECSNiagaraHandle>(*World.Get());
-	flecs::component<FECSNiagaraGroupProjectileHandle>(*World.Get());
-	flecs::component<FECSNiagaraGroupHitHandle>(*World.Get());
+	flecs::component<FECSNiagaraProjectileRelationComponent>(*World.Get());
+	flecs::component<FECSNiagaraHitsRelationComponent>(*World.Get());
+	flecs::component<FECSNiagaraGroupManager>(*World.Get());
+
 #endif
 }
 
@@ -50,8 +52,8 @@ namespace FNiagaraECSSystem
 	void UpdateNiagaraPositionsArray(flecs::iter& Iter, FECSBulletTransform* BulletTransform)
 	{
 		//get our parent FECSNiagaraGroupProjectileHandle
-		auto ParentHandle = Iter.term<FECSNiagaraGroupProjectileHandle>(2);
-		
+		auto ParentHandleObject = Iter.term_id(2).object();
+		auto ParentHandle = const_cast<FECSNiagaraGroupManager*>(ParentHandleObject.get<FECSNiagaraGroupManager>());
 		ParentHandle->IteratorOffset += Iter.count();
 
 		//TODO: shrink these eventually? could set a system to run ever x seconds etc
@@ -72,37 +74,37 @@ namespace FNiagaraECSSystem
 
 	}
 
-	void UpdateNiagaraHitsArray(flecs::iter& Iter, FECSBulletTransform* BulletTransform,FECSBulletHitNormal* BulletHitNormal)
+	// void UpdateNiagaraHitsArray(flecs::iter& Iter, FECSBulletTransform* BulletTransform,FECSBulletHitNormal* BulletHitNormal)
+	// {
+	// 	//get our parent FECSNiagaraGroupProjectileHandle
+	// 	auto ParentHandle = Iter.term<FECSNiagaraGroupHitHandle>(3);
+	// 	
+	// 	ParentHandle->IteratorOffset += Iter.count();
+	//
+	// 	//TODO: shrink these eventually? could set a system to run ever x seconds etc
+	// 	ParentHandle->HitLocations.SetNum(ParentHandle->IteratorOffset, false);
+	// 	ParentHandle->HitNormals.SetNum(ParentHandle->IteratorOffset, false);
+	// 	
+	// 	auto HitPositionArrayDirect = ParentHandle->HitLocations.GetData();
+	// 	auto HitNormalArrayDirect = ParentHandle->HitNormals.GetData();
+	// 	//int Offset = ParentHandle->IteratorOffset;
+	//
+	// 	ParallelFor(Iter.count(), [&](int32 index)
+	// 	{
+	// 		auto& CurrentTransform = BulletTransform[index];
+	// 		auto& CurrentBulletHitNormal = BulletHitNormal[index];
+	//
+	// 		HitPositionArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentTransform.CurrentTransform.GetTranslation();
+	// 		HitNormalArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentBulletHitNormal.Normal;
+	// 	});
+	//
+	// 	
+	// }
+
+
+	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroupManager& Handle)
 	{
-		//get our parent FECSNiagaraGroupProjectileHandle
-		auto ParentHandle = Iter.term<FECSNiagaraGroupHitHandle>(3);
-		
-		ParentHandle->IteratorOffset += Iter.count();
-
-		//TODO: shrink these eventually? could set a system to run ever x seconds etc
-		ParentHandle->HitLocations.SetNum(ParentHandle->IteratorOffset, false);
-		ParentHandle->HitNormals.SetNum(ParentHandle->IteratorOffset, false);
-		
-		auto HitPositionArrayDirect = ParentHandle->HitLocations.GetData();
-		auto HitNormalArrayDirect = ParentHandle->HitNormals.GetData();
-		//int Offset = ParentHandle->IteratorOffset;
-
-		ParallelFor(Iter.count(), [&](int32 index)
-		{
-			auto& CurrentTransform = BulletTransform[index];
-			auto& CurrentBulletHitNormal = BulletHitNormal[index];
-
-			HitPositionArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentTransform.CurrentTransform.GetTranslation();
-			HitNormalArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentBulletHitNormal.Normal;
-		});
-
-		
-	}
-
-
-	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroupProjectileHandle& Handle)
-	{
-		if (Handle.Component.IsValid())
+		if (Handle.Component.IsValid()&&Handle.IteratorOffset > 4)
 		{
 			//Set current positions
 			SetNiagaraVectorArray(Handle.Component.Get(),Handle.LocationsParameterName,Handle.ParticleLocations);
@@ -111,16 +113,7 @@ namespace FNiagaraECSSystem
 		Handle.IteratorOffset = 0;
 	}
 
-	void PushNiagaraHitsArray(flecs::entity e, FECSNiagaraGroupHitHandle& Handle)
-	{
-		if (Handle.Component.IsValid())
-		{
-			//Set current positions
-			SetNiagaraVectorArray(Handle.Component.Get(),Handle.LocationsParameterName,Handle.HitLocations);
-			SetNiagaraVectorArray(Handle.Component.Get(),Handle.HitNormalsParameterName,Handle.HitNormals);
-		}
-		Handle.IteratorOffset = 0;
-	}
+
 #endif
 
 }
@@ -134,23 +127,21 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 
 	World->system<FECSBulletTransform>("Write Grouped Projectile Positions TArrays")
 		.kind(flecs::PreStore)
-		.term<FECSNiagaraGroupProjectileHandle>()
-			.superset(flecs::Childof)
+		.term<FECSNiagaraProjectileRelationComponent>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::UpdateNiagaraPositionsArray);
 
-	World->system<FECSNiagaraGroupProjectileHandle>("Grouped Projectile Positions TArrays to Niagara")
+	World->system<FECSNiagaraGroupManager>("Grouped Particle TArrays to Niagara")
 		.kind(flecs::PreStore)
 		.each(&FNiagaraECSSystem::PushNiagaraPositionsArray);
 
-	World->system<FECSBulletTransform,FECSBulletHitNormal>("Write Grouped Projectile Hits TArrays")
-		.kind(flecs::PreStore)
-		.term<FECSNiagaraGroupHitHandle>()
-			.superset(flecs::Childof)
-		.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
-	
-	World->system<FECSNiagaraGroupHitHandle>("Grouped Projectile Hit TArrays to Niagara")
-		.kind(flecs::PreStore)
-		.each(&FNiagaraECSSystem::PushNiagaraHitsArray);
+	// World->system<FECSBulletTransform,FECSBulletHitNormal>("Write Grouped Projectile Hits TArrays")
+	// 	.kind(flecs::PreStore)
+	// 	.term<FECSNiagaraGroupHitHandle>().superset()
+	// 	.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
+	//
+	// World->system<FECSNiagaraGroupHitHandle>("Grouped Projectile Hit TArrays to Niagara")
+	// 	.kind(flecs::PreStore)
+	// 	.each(&FNiagaraECSSystem::PushNiagaraHitsArray);
 
 
 #endif

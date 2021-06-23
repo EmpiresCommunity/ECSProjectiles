@@ -13,12 +13,16 @@ struct FECSNiagaraHandle
 	FName LocationParameterName;
 	FName PreviousLocationParameterName;
 };
+
+
+struct FECSNiagaraProjectileRelationComponent{};
+struct FECSNiagaraHitsRelationComponent{};
+
 //A Niagara system that is intended to render many projectiles at once. Perhaps one per visual projectile type?
 //this is intended to be used as a parent/instance of many bullet entities
-
 #endif
 USTRUCT(BlueprintType)
-struct FECSNiagaraGroupProjectileHandle
+struct FECSNiagaraGroupManager
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -33,26 +37,13 @@ struct FECSNiagaraGroupProjectileHandle
 
 	//This is required because an iterator is called for every ECS archetype.
 	//This gets incremented with the length of the iterator.
-	int32 IteratorOffset;
+	int32 IteratorOffset = 0;
 };
-USTRUCT(BlueprintType)
-struct FECSNiagaraGroupHitHandle
-{
-	GENERATED_BODY()
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TWeakObjectPtr<class UNiagaraComponent> Component;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName LocationsParameterName;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName HitNormalsParameterName;
-	//this can't be the smart way to do things here...
-	TArray<FVector> HitLocations;
-	TArray<FVector> HitNormals;
-	//This is required because an iterator is called for every ECS archetype.
-	//This gets incremented with the length of the iterator.
-	int32 IteratorOffset;
 
-};
+// struct FECSNiagaraGroupProjectileHandle
+// {
+// 	
+// };
 /**
  * 
  */
