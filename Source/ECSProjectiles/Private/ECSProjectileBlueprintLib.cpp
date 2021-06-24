@@ -26,7 +26,7 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBullet(UObject* WorldContex
 }
 
 
-FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject,FECSEntityHandle NiagaraEntityId, FTransform SpawnTransform, float Velocity)
+FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject,FECSEntityHandle NiagaraEntityId, FTransform SpawnTransform, float Velocity,bool bShouldRicochet)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
@@ -35,9 +35,13 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	flecs::entity e = ECSWorld->entity()
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
 		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity })
-		.add<FECSRayCast>()
 		.set<FECSBulletGravity>({World->GetGravityZ()})
+		.add<FECSRayCast>()
+			//this is an entity pair!
 			.add<FECSNiagaraProjectileRelationComponent>(NiagaraEntityId.Entity);
+
+	if(bShouldRicochet) e.set<FECSBulletRicochet>({30.0f,100.0f});
+
 
 	
 	

@@ -5,6 +5,7 @@
 #include "flecs.h"
 #include "ECSProjectileDeveloperSettings.h"
 #include "Async/ParallelFor.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 
 
 void UECSProjectileModule_SimpleSim::InitializeComponents(TSharedPtr<flecs::world> World)
@@ -13,6 +14,8 @@ void UECSProjectileModule_SimpleSim::InitializeComponents(TSharedPtr<flecs::worl
 	flecs::component<FECSBulletVelocity>(*World.Get());
 	flecs::component<FECSActorEntity>(*World.Get());
 	flecs::component<FECSRayCast>(*World.Get());
+	flecs::component<FECSBulletGravity>(*World.Get());
+	flecs::component<FECSBulletRicochet>(*World.Get());
 
 }
 
@@ -87,14 +90,14 @@ namespace FProjectileSimpleSim
 
 	}
 
-	void ProjectileVelocityAffectsPosition(flecs::entity e, FECSBulletTransform& tform, FECSBulletVelocity& velocity)
+	void ProjectileVelocityAffectsPosition(flecs::entity e, FECSBulletTransform& Transform, FECSBulletVelocity& Velocity)
 	{
 		const float DeltaTime = e.delta_time();
-		tform.PreviousTransform = tform.CurrentTransform;
+		Transform.PreviousTransform = Transform.CurrentTransform;
 		//gonna make another system for gravity
-		FVector DesiredDestination = tform.CurrentTransform.GetLocation() +  velocity.Velocity * DeltaTime;
+		FVector DesiredDestination = Transform.CurrentTransform.GetLocation() +  Velocity.Velocity * DeltaTime;
 		//Set the final position
-		tform.CurrentTransform = FTransform((DesiredDestination - tform.PreviousTransform.GetLocation()).GetSafeNormal().ToOrientationQuat(), DesiredDestination, tform.CurrentTransform.GetScale3D());
+		Transform.CurrentTransform = FTransform((DesiredDestination - Transform.PreviousTransform.GetLocation()).GetSafeNormal().ToOrientationQuat(), DesiredDestination, Transform.CurrentTransform.GetScale3D());
 	}
 	void ProjectileGravityAffectsVelocity(flecs::entity e, FECSBulletVelocity& velocity, FECSBulletGravity& gravity)
 	{
@@ -102,21 +105,22 @@ namespace FProjectileSimpleSim
 		velocity.Velocity  +=  FVector(0,0,gravity.GravityZ) * DeltaTime;
 	}
 	
-	void ECSBulletRayCast(flecs::iter Iter,FECSBulletTransform* P, FECSBulletVelocity* V,FECSRayCast* Isb)
+	void BulletAsyncRayCast(flecs::iter Iter,FECSBulletTransform* Transform, FECSBulletVelocity* Velocity,FECSRayCast* Raycast)
 	{
 		ParallelForWithPreWork(Iter.count(),
 			[&](int32 index)
 			{
                
-				auto& Position = P[index];
-				auto& RayCastHit = Isb[index];
+				auto& Position = Transform[index];
+				auto& RayCastHit = Raycast[index];
 
 				auto World = (UWorld*)Iter.world().get_context();
 
-
+				FCollisionQueryParams QueryParams;
+				QueryParams.bReturnPhysicalMaterial = true;
 				auto HitResult = FHitResult();
 				World->LineTraceSingleByChannel(HitResult, Position.PreviousTransform.GetTranslation(), Position.CurrentTransform.GetTranslation(),
-					GetDefault<UECSProjectileDeveloperSettings>()->ProjectileCollision, FCollisionQueryParams());
+					GetDefault<UECSProjectileDeveloperSettings>()->ProjectileCollision, QueryParams);
 				RayCastHit.HitResult = HitResult;
 
 			},
@@ -125,21 +129,54 @@ namespace FProjectileSimpleSim
 			});
 	}
 	
-	void QueryAsyncRayCasts(flecs::iter Iter, FECSBulletTransform* P,FECSRayCast*Rc)
+	void QueryAsyncRayCasts(flecs::iter Iter, FECSBulletTransform* Transform,FECSRayCast*Raycast)
+	{
+		for (auto i : Iter)
+		{
+			if(Raycast[i].HitResult.bBlockingHit)
+			{
+				FHitResult HitResult = Raycast[i].HitResult;
+				auto BulletTransform = Transform[i];
+
+				//kinda wish we just split position and rotation into their own comps (grumble grumble...)
+				BulletTransform.CurrentTransform = FTransform(Transform->CurrentTransform.GetRotation(),HitResult.ImpactPoint,Transform->CurrentTransform.GetScale3D());
+				//TODO: really need a cool way to represent events (maybe not even in entities or components)
+				Iter.entity(i).remove<FECSBulletVelocity>();
+			}
+		}
+	}
+
+	//less goofy way of doing this? hmm... 	
+	void QueryAsyncRicochetRayCasts(flecs::iter Iter, FECSBulletTransform* Transform,FECSBulletVelocity* Velocity,FECSRayCast*Rc,FECSBulletRicochet*Ricochet)
 	{
 		for (auto i : Iter)
 		{
 			if(Rc[i].HitResult.bBlockingHit)
 			{
 				FHitResult HitResult = Rc[i].HitResult;
-				auto BulletTransform = P[i];
-				//kinda wish we just split position and rotation into their own comps (grumble grumble...)
-				//move the entity back to here
-				BulletTransform.CurrentTransform = FTransform(P->CurrentTransform.GetRotation(),HitResult.ImpactPoint,P->CurrentTransform.GetScale3D());
-				Iter.entity(i).remove<FECSBulletVelocity>();
-				//stop raycasting as we are stopped (I guess?)
-				//really need a cool way to represent events (maybe not even in entities or components)
-				Iter.entity(i).remove<FECSRayCast>();
+
+				
+				auto& BulletTransform = Transform[i];
+				//we should prevent too direct angle reflections etc
+				auto& BulletRicochet = Ricochet[i];
+				auto& BulletVecocity = Velocity[i];
+
+				BulletVecocity.Velocity = FMath::GetReflectionVector(BulletVecocity.Velocity,HitResult.ImpactNormal);
+				if (HitResult.PhysMaterial.IsValid())
+				{
+					BulletVecocity.Velocity *= HitResult.PhysMaterial.Get()->Restitution;
+				}
+				if(BulletVecocity.Velocity.Size() < BulletRicochet.MinSpeed)
+				{
+					Iter.entity(i).remove<FECSBulletRicochet>();
+				}
+				
+
+
+				auto ReflectionVector = FMath::GetReflectionVector(HitResult.TraceEnd - HitResult.Location,HitResult.ImpactNormal);
+				auto ReflectionPosition = ReflectionVector + HitResult.Location;				
+				BulletTransform.CurrentTransform.SetTranslation(ReflectionPosition);
+				BulletTransform.PreviousTransform.SetTranslation(ReflectionPosition-BulletVecocity.Velocity);
 			}
 		}
 	}
@@ -167,11 +204,17 @@ void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> 
 			.each(&FProjectileSimpleSim::ProjectileVelocityAffectsPosition);
 		World->system<FECSBulletVelocity, FECSBulletGravity>("Projectile Gravity affects Velocity")
 			.each(&FProjectileSimpleSim::ProjectileGravityAffectsVelocity);
-
 		World->system<FECSBulletTransform, FECSBulletVelocity,FECSRayCast>("Bullet Collision Raycasts")
-			.iter(&FProjectileSimpleSim::ECSBulletRayCast);
+			.iter(&FProjectileSimpleSim::BulletAsyncRayCast);
 		World->system<FECSBulletTransform, FECSRayCast>("Query Async Raycasts for hits")
+			.term<FECSBulletRicochet>().oper(flecs::Not)
 			.iter(&FProjectileSimpleSim::QueryAsyncRayCasts);
+		World->system<FECSBulletTransform,FECSBulletVelocity, FECSRayCast,FECSBulletRicochet>("Query Async RicoChet Raycasts for hits")
+			.iter(&FProjectileSimpleSim::QueryAsyncRicochetRayCasts);
+			
+		World->system<FECSBulletTransform, FECSBulletVelocity,FECSRayCast>("Bullet Collision Raycasts")
+			.iter(&FProjectileSimpleSim::BulletAsyncRayCast);
+
 	}
 
 

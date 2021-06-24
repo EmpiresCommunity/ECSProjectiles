@@ -16,6 +16,12 @@ struct FECSBulletVelocity
 {
 	FVector Velocity;
 };
+
+struct FECSBulletRicochet
+{
+	float Angle;
+	float MinSpeed;
+};
 struct FECSRayCast
 {
 	FHitResult HitResult;
