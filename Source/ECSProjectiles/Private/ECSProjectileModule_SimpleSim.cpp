@@ -87,21 +87,19 @@ namespace FProjectileSimpleSim
 
 	}
 
-
 	void ProjectileVelocityAffectsPosition(flecs::entity e, FECSBulletTransform& tform, FECSBulletVelocity& velocity)
 	{
 		const float DeltaTime = e.delta_time();
-
-		UWorld* World = (UWorld*)e.world().get_context();
-		if (!IsValid(World))
-		{
-			return;
-		}
 		tform.PreviousTransform = tform.CurrentTransform;
 		//gonna make another system for gravity
 		FVector DesiredDestination = tform.CurrentTransform.GetLocation() +  velocity.Velocity * DeltaTime;
 		//Set the final position
 		tform.CurrentTransform = FTransform((DesiredDestination - tform.PreviousTransform.GetLocation()).GetSafeNormal().ToOrientationQuat(), DesiredDestination, tform.CurrentTransform.GetScale3D());
+	}
+	void ProjectileGravityAffectsVelocity(flecs::entity e, FECSBulletVelocity& velocity, FECSBulletGravity& gravity)
+	{
+		const float DeltaTime = e.delta_time();
+		velocity.Velocity  +=  FVector(0,0,gravity.GravityZ) * DeltaTime;
 	}
 	
 	void ECSBulletRayCast(flecs::iter Iter,FECSBulletTransform* P, FECSBulletVelocity* V,FECSRayCast* Isb)
@@ -167,7 +165,9 @@ void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> 
 	{
 		World->system<FECSBulletTransform, FECSBulletVelocity>("Projectile Velocity affects Position")
 			.each(&FProjectileSimpleSim::ProjectileVelocityAffectsPosition);
-		
+		World->system<FECSBulletVelocity, FECSBulletGravity>("Projectile Gravity affects Velocity")
+			.each(&FProjectileSimpleSim::ProjectileGravityAffectsVelocity);
+
 		World->system<FECSBulletTransform, FECSBulletVelocity,FECSRayCast>("Bullet Collision Raycasts")
 			.iter(&FProjectileSimpleSim::ECSBulletRayCast);
 		World->system<FECSBulletTransform, FECSRayCast>("Query Async Raycasts for hits")
