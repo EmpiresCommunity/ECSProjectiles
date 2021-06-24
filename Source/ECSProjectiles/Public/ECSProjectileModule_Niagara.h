@@ -27,10 +27,11 @@ struct FECSNiagaraGroupManager
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TWeakObjectPtr<class UNiagaraComponent> Component;
+	//generic parameter names. Dare we split these off into components?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName LocationsParameterName;
+	FName FirstParameterName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName PreviousLocationsParameterName;
+	FName SecondParameterName;
 	//this can't be the smart way to do things here...
 	TArray<FVector> ParticleLocations;
 	TArray<FVector> PreviousParticleLocations;
@@ -39,11 +40,6 @@ struct FECSNiagaraGroupManager
 	//This gets incremented with the length of the iterator.
 	int32 IteratorOffset = 0;
 };
-
-// struct FECSNiagaraGroupProjectileHandle
-// {
-// 	
-// };
 /**
  * 
  */

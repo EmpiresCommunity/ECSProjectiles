@@ -28,6 +28,7 @@ namespace FNiagaraECSSystem
 {
 #if ECSPROJECTILES_NIAGARA
 	//Just UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector but copied here.
+	//not a system? should put somewhere else I suppose
 	void SetNiagaraVectorArray(UNiagaraComponent* NiagaraSystem, FName ParameterName,TArray<FVector> VectorArray)
 	{
 		if (UNiagaraDataInterfaceArrayFloat3* ArrayDI =
@@ -53,6 +54,7 @@ namespace FNiagaraECSSystem
 	{
 		//get our parent FECSNiagaraGroupProjectileHandle
 		auto ParentHandleObject = Iter.term_id(2).object();
+		//
 		auto ParentHandle = const_cast<FECSNiagaraGroupManager*>(ParentHandleObject.get<FECSNiagaraGroupManager>());
 		ParentHandle->IteratorOffset += Iter.count();
 
@@ -74,41 +76,13 @@ namespace FNiagaraECSSystem
 
 	}
 
-	// void UpdateNiagaraHitsArray(flecs::iter& Iter, FECSBulletTransform* BulletTransform,FECSBulletHitNormal* BulletHitNormal)
-	// {
-	// 	//get our parent FECSNiagaraGroupProjectileHandle
-	// 	auto ParentHandle = Iter.term<FECSNiagaraGroupHitHandle>(3);
-	// 	
-	// 	ParentHandle->IteratorOffset += Iter.count();
-	//
-	// 	//TODO: shrink these eventually? could set a system to run ever x seconds etc
-	// 	ParentHandle->HitLocations.SetNum(ParentHandle->IteratorOffset, false);
-	// 	ParentHandle->HitNormals.SetNum(ParentHandle->IteratorOffset, false);
-	// 	
-	// 	auto HitPositionArrayDirect = ParentHandle->HitLocations.GetData();
-	// 	auto HitNormalArrayDirect = ParentHandle->HitNormals.GetData();
-	// 	//int Offset = ParentHandle->IteratorOffset;
-	//
-	// 	ParallelFor(Iter.count(), [&](int32 index)
-	// 	{
-	// 		auto& CurrentTransform = BulletTransform[index];
-	// 		auto& CurrentBulletHitNormal = BulletHitNormal[index];
-	//
-	// 		HitPositionArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentTransform.CurrentTransform.GetTranslation();
-	// 		HitNormalArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentBulletHitNormal.Normal;
-	// 	});
-	//
-	// 	
-	// }
-
-
 	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroupManager& Handle)
 	{
-		if (Handle.Component.IsValid()&&Handle.IteratorOffset > 4)
+		if (Handle.Component.IsValid())
 		{
 			//Set current positions
-			SetNiagaraVectorArray(Handle.Component.Get(),Handle.LocationsParameterName,Handle.ParticleLocations);
-			SetNiagaraVectorArray(Handle.Component.Get(),Handle.PreviousLocationsParameterName,Handle.PreviousParticleLocations);
+			SetNiagaraVectorArray(Handle.Component.Get(),Handle.FirstParameterName,Handle.ParticleLocations);
+			SetNiagaraVectorArray(Handle.Component.Get(),Handle.SecondParameterName,Handle.PreviousParticleLocations);
 		}
 		Handle.IteratorOffset = 0;
 	}
@@ -133,17 +107,6 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 	World->system<FECSNiagaraGroupManager>("Grouped Particle TArrays to Niagara")
 		.kind(flecs::PreStore)
 		.each(&FNiagaraECSSystem::PushNiagaraPositionsArray);
-
-	// World->system<FECSBulletTransform,FECSBulletHitNormal>("Write Grouped Projectile Hits TArrays")
-	// 	.kind(flecs::PreStore)
-	// 	.term<FECSNiagaraGroupHitHandle>().superset()
-	// 	.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
-	//
-	// World->system<FECSNiagaraGroupHitHandle>("Grouped Projectile Hit TArrays to Niagara")
-	// 	.kind(flecs::PreStore)
-	// 	.each(&FNiagaraECSSystem::PushNiagaraHitsArray);
-
-
 #endif
 }
 

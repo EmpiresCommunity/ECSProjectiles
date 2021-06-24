@@ -16,7 +16,10 @@ struct FECSBulletVelocity
 {
 	FVector Velocity;
 };
-
+struct FECSRayCast
+{
+	FHitResult HitResult;
+};
 struct FECSActorEntity
 {
 	TSoftObjectPtr<AActor> Actor;
