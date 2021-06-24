@@ -35,8 +35,8 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	flecs::entity e = ECSWorld->entity()
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
 		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity })
+		.add<FECSRayCast>()
 			.add<FECSNiagaraProjectileRelationComponent>(NiagaraEntityId.Entity);
-		//	.add<FECSNiagaraGroupProjectileManager>(GroupHitManagerEntityId);
 
 	
 	
