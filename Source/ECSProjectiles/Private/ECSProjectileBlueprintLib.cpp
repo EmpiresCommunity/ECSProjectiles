@@ -40,7 +40,10 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 			//this is an entity pair!
 			.add<FECSNiagaraProjectileRelationComponent>(NiagaraEntityId.Entity);
 
-	if(bShouldRicochet) e.set<FECSBulletRicochet>({30.0f,100.0f});
+	if(bShouldRicochet)
+	{
+		e.set<FECSBulletRicochet>({30.0f,100.0f});
+	}
 
 
 	
