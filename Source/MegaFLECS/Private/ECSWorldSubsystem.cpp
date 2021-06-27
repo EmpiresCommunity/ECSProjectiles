@@ -26,17 +26,26 @@ void UECSWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	for (auto& Modules : DevSettings->ECSModules)
 	{
-		Modules.GetDefaultObject()->InitializeComponents(ECSWorld);
+		if(IsValid(Modules))
+		{
+			Modules.GetDefaultObject()->InitializeComponents(ECSWorld);
+		}
 	}
 
 	for (auto& Modules : DevSettings->ECSModules)
 	{
-		Modules.GetDefaultObject()->InitializeSystems(ECSWorld);
+		if(IsValid(Modules))
+		{
+			Modules.GetDefaultObject()->InitializeSystems(ECSWorld);
+		}
 	}
 
 	for (auto& Modules : DevSettings->ECSModules)
 	{
-		Modules.GetDefaultObject()->FinishInitialize(ECSWorld);
+		if(IsValid(Modules))
+		{
+			Modules.GetDefaultObject()->FinishInitialize(ECSWorld);
+		}
 	}
 
 	
