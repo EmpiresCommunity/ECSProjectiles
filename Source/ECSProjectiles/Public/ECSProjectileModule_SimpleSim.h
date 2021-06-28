@@ -26,6 +26,10 @@ struct FECSRayCast
 {
 	FHitResult HitResult;
 };
+struct FECSBulletHit
+{
+	FHitResult HitResult;
+};
 struct FECSActorEntity
 {
 	TSoftObjectPtr<AActor> Actor;
@@ -39,10 +43,7 @@ struct FECSBulletGravity
 //an "event" that is just a component representing the hit normal.
 //I guess there's no reason we can't just stuff the entire hitresult in there?
 //could make our own ECShitresult without the chaff if we want to stay ~Data Oriented~ and keep it small
-struct FECSBulletHit
-{
-	FHitResult HitResult;
-};
+
 /**
  * 
  */

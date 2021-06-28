@@ -33,8 +33,8 @@ struct FECSNiagaraGroupManager
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName SecondParameterName;
 	//this can't be the smart way to do things here...
-	TArray<FVector> ParticleLocations;
-	TArray<FVector> PreviousParticleLocations;
+	TArray<FVector> FirstArray;
+	TArray<FVector> SecondArray;
 
 	//This is required because an iterator is called for every ECS archetype.
 	//This gets incremented with the length of the iterator.

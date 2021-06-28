@@ -59,11 +59,11 @@ namespace FNiagaraECSSystem
 		ParentHandle->IteratorOffset += Iter.count();
 
 		//TODO: shrink these eventually? could set a system to run ever x seconds etc
-		 ParentHandle->ParticleLocations.SetNum(ParentHandle->IteratorOffset, false);
-		 ParentHandle->PreviousParticleLocations.SetNum(ParentHandle->IteratorOffset, false);
+		 ParentHandle->FirstArray.SetNum(ParentHandle->IteratorOffset, false);
+		 ParentHandle->SecondArray.SetNum(ParentHandle->IteratorOffset, false);
 		
-		 auto PositionArrayDirect = ParentHandle->ParticleLocations.GetData();
-		 auto PrevPositionArrayDirect = ParentHandle->PreviousParticleLocations.GetData();
+		 auto PositionArrayDirect = ParentHandle->FirstArray.GetData();
+		 auto PrevPositionArrayDirect = ParentHandle->SecondArray.GetData();
 		//int Offset = ParentHandle->IteratorOffset;
 
 		 ParallelFor(Iter.count(), [&](int32 index)
@@ -75,15 +75,40 @@ namespace FNiagaraECSSystem
 		 });
 
 	}
+	void UpdateNiagaraHitsArray(flecs::iter& Iter, FECSBulletHit* BulletHit)
+	{
+		//get our parent FECSNiagaraGroupProjectileHandle
+		auto ParentHandleObject = Iter.term_id(2).object();
+		auto ParentHandle = const_cast<FECSNiagaraGroupManager*>(ParentHandleObject.get<FECSNiagaraGroupManager>());
+		ParentHandle->IteratorOffset += Iter.count();
 
+		//TODO: shrink these eventually? could set a system to run ever x seconds etc
+		ParentHandle->FirstArray.SetNum(ParentHandle->IteratorOffset, false);
+		ParentHandle->SecondArray.SetNum(ParentHandle->IteratorOffset, false);
+		UE_LOG(LogTemp,Warning,TEXT("Added %i hits!"),Iter.count())
+		auto FirstArrayDirect = ParentHandle->FirstArray.GetData();
+		auto SecondArrayDirect = ParentHandle->SecondArray.GetData();
+
+		ParallelFor(Iter.count(), [&](int32 index)
+		{
+			auto CurrentHitResult = BulletHit[index].HitResult;
+		
+			FirstArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentHitResult.ImpactPoint;
+			SecondArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentHitResult.ImpactNormal;
+		});
+
+	}
 	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroupManager& Handle)
 	{
 		if (Handle.Component.IsValid())
 		{
 			//Set current positions
-			SetNiagaraVectorArray(Handle.Component.Get(),Handle.FirstParameterName,Handle.ParticleLocations);
-			SetNiagaraVectorArray(Handle.Component.Get(),Handle.SecondParameterName,Handle.PreviousParticleLocations);
+			SetNiagaraVectorArray(Handle.Component.Get(),Handle.FirstParameterName,Handle.FirstArray);
+			SetNiagaraVectorArray(Handle.Component.Get(),Handle.SecondParameterName,Handle.SecondArray);
 		}
+		Handle.FirstArray.Empty();
+		Handle.SecondArray.Empty();
+
 		Handle.IteratorOffset = 0;
 	}
 
@@ -103,6 +128,11 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 		.kind(flecs::PreStore)
 		.term<FECSNiagaraProjectileRelationComponent>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::UpdateNiagaraPositionsArray);
+	
+	World->system<FECSBulletHit>("Write Grouped Projectile Hits TArrays when set")
+		.kind(flecs::OnSet)
+		.term<FECSNiagaraHitsRelationComponent>(flecs::Wildcard)
+		.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
 
 	World->system<FECSNiagaraGroupManager>("Grouped Particle TArrays to Niagara")
 		.kind(flecs::PreStore)
