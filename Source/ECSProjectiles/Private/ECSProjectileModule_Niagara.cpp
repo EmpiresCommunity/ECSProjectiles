@@ -2,6 +2,8 @@
 
 
 #include "ECSProjectileModule_Niagara.h"
+
+#include "DrawDebugHelpers.h"
 #include "flecs.h"
 #include "ECSProjectileModule_SimpleSim.h"
 #include "MegaFLECSTypes.h"
@@ -16,9 +18,11 @@
 void UECSProjectileModule_Niagara::InitializeComponents(TSharedPtr<flecs::world> World)
 {
 #if ECSPROJECTILES_NIAGARA
-	flecs::component<FECSNiagaraHandle>(*World.Get());
-	flecs::component<FECSNiagaraProjectileRelationComponent>(*World.Get());
-	flecs::component<FECSNiagaraHitsRelationComponent>(*World.Get());
+	flecs::component<FECSNiagaraComponentHandle>(*World.Get());
+	flecs::component<FECSNiagaraSystemHandle>(*World.Get());
+
+	flecs::component<FECSRNiagaraProjectileManager>(*World.Get());
+	flecs::component<FECSRNiagaraHitsManager>(*World.Get());
 	flecs::component<FECSNiagaraGroupManager>(*World.Get());
 
 #endif
@@ -40,7 +44,7 @@ namespace FNiagaraECSSystem
 		}
 	}
 	
-	void UpdateNiagaraPositions(flecs::entity e, const FECSNiagaraHandle& Handle, const FECSBulletTransform& Transform)
+	void UpdateNiagaraPositions(flecs::entity e, const FECSNiagaraComponentHandle& Handle, const FECSBulletTransform& Transform)
 	{
 		if (Handle.Component.IsValid())
 		{
@@ -98,6 +102,28 @@ namespace FNiagaraECSSystem
 		});
 
 	}
+	void NiagaraHitFX(flecs::iter& Iter, FECSBulletHit* BulletHit)
+	{
+		UWorld* World = (UWorld*)Iter.world().get_context();
+		//get our parent FECSNiagaraGroupProjectileHandle
+		auto ParentHandleObject = Iter.term_id(2).object();
+		auto ParentHandle = const_cast<FECSNiagaraSystemHandle*>(ParentHandleObject.get<FECSNiagaraSystemHandle>());
+		for (auto i : Iter)
+		{
+			const auto CurrentHitResult = BulletHit[i].HitResult;
+			if(ParentHandle->System.IsValid())
+			{
+				auto SpawnedSystemComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World,ParentHandle->System.Get(),
+		CurrentHitResult.ImpactPoint,
+		CurrentHitResult.ImpactNormal.ForwardVector.Rotation(),
+			FVector(1.0f),true,true,ENCPoolMethod::None);
+
+				SpawnedSystemComp->SetWorldRotation(CurrentHitResult.Normal.ToOrientationQuat().GetForwardVector().ToOrientationRotator());
+
+			}
+		}
+
+	}
 	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroupManager& Handle)
 	{
 		if (Handle.Component.IsValid())
@@ -120,19 +146,24 @@ namespace FNiagaraECSSystem
 void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> World)
 {
 #if ECSPROJECTILES_NIAGARA
-	World->system<FECSNiagaraHandle, FECSBulletTransform>("Write Individual Projectile Positions to Niagara")
+	World->system<FECSNiagaraComponentHandle, FECSBulletTransform>("Write Individual Projectile Positions to Niagara")
 		.kind(flecs::PreStore)
 		.each(&FNiagaraECSSystem::UpdateNiagaraPositions);
 
 	World->system<FECSBulletTransform>("Write Grouped Projectile Positions TArrays")
 		.kind(flecs::PreStore)
-		.term<FECSNiagaraProjectileRelationComponent>(flecs::Wildcard)
+		.term<FECSRNiagaraProjectileManager>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::UpdateNiagaraPositionsArray);
 	
 	World->system<FECSBulletHit>("Write Grouped Projectile Hits TArrays when set")
-		.kind(flecs::OnSet)
-		.term<FECSNiagaraHitsRelationComponent>(flecs::Wildcard)
+		.kind(flecs::UnSet)
+		.term<FECSRNiagaraHitsManager>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
+	
+	World->system<FECSBulletHit>("SpawnProjectile Hits FX component")
+		.kind(flecs::UnSet)
+		.term<FECSRNiagaraHitFX>(flecs::Wildcard)
+		.iter(&FNiagaraECSSystem::NiagaraHitFX);
 
 	World->system<FECSNiagaraGroupManager>("Grouped Particle TArrays to Niagara")
 		.kind(flecs::PreStore)

@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "ECSModule.h"
+#include "NiagaraSystem.h"
+
 #include "ECSProjectileModule_Niagara.generated.h"
 
 #if ECSPROJECTILES_NIAGARA
-struct FECSNiagaraHandle
+struct FECSNiagaraComponentHandle
 {
 	TWeakObjectPtr<class UNiagaraComponent> Component;
 	FName LocationParameterName;
@@ -15,12 +17,23 @@ struct FECSNiagaraHandle
 };
 
 
-struct FECSNiagaraProjectileRelationComponent{};
-struct FECSNiagaraHitsRelationComponent{};
+struct FECSRNiagaraProjectileManager{};
+struct FECSRNiagaraHitsManager{};
+struct FECSRNiagaraHitFX{};
+
 
 //A Niagara system that is intended to render many projectiles at once. Perhaps one per visual projectile type?
 //this is intended to be used as a parent/instance of many bullet entities
 #endif
+
+USTRUCT(BlueprintType)
+
+struct FECSNiagaraSystemHandle
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TWeakObjectPtr<class UNiagaraSystem> System;
+};
 USTRUCT(BlueprintType)
 struct FECSNiagaraGroupManager
 {

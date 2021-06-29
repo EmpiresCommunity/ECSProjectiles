@@ -26,7 +26,8 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBullet(UObject* WorldContex
 }
 
 
-FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject,FECSEntityHandle NiagaraProjectilesEntityId,FECSEntityHandle NiagaraHitsEntityId, FTransform SpawnTransform, float Velocity,bool bShouldRicochet)
+FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject, FECSEntityHandle NiagaraProjectilesEntityId, FECSEntityHandle NiagaraHitsEntityId, FTransform
+                                                                          SpawnTransform, float Velocity, bool bShouldRicochet,bool bGroupedHits)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
@@ -38,17 +39,21 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 		.set<FECSBulletGravity>({World->GetGravityZ()})
 		.add<FECSRayCast>()
 			//this is an entity pair!
-			.add<FECSNiagaraProjectileRelationComponent>(NiagaraProjectilesEntityId.Entity)
-			.add<FECSNiagaraHitsRelationComponent>(NiagaraHitsEntityId.Entity);
+			.add<FECSRNiagaraProjectileManager>(NiagaraProjectilesEntityId.Entity);
 
 	if(bShouldRicochet)
 	{
 		e.set<FECSBulletRicochet>({30.0f,100.0f});
 	}
 
-
-	
-	
+	if(bGroupedHits)
+	{
+			e.add<FECSRNiagaraHitsManager>(NiagaraHitsEntityId.Entity);
+	}
+	else
+	{
+		e.add<FECSRNiagaraHitFX>(NiagaraHitsEntityId.Entity);
+	}
 	return { e };
 }
 
@@ -63,7 +68,17 @@ FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject
 		.set<FECSNiagaraGroupManager>(NiagaraComponentHandle);
 	
 }
-
+FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraFxHandleEntity(UObject* WorldContextObject, FECSNiagaraSystemHandle NiagaraSystemHandle)
+{
+	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
+	
+	//make a NiagaraGroupHandle entity
+	//future: make Niagara handles generic? two different entities? depends on how crazy we get here
+	
+	return GetECSWorld(World)->entity()
+		.set<FECSNiagaraSystemHandle>(NiagaraSystemHandle);
+	
+}
 TSharedPtr<flecs::world> UECSProjectileBlueprintLib::GetECSWorld(UWorld* World)
 {
 	if (UECSWorldSubsystem* WorldSubsystem = World->GetSubsystem<UECSWorldSubsystem>())

@@ -132,22 +132,26 @@ namespace FProjectileSimpleSim
 			[&]()
 			{
 			});
+
+		for (auto i : Iter)
+		{
+			if(Raycast[i].HitResult.bBlockingHit)
+			{
+				UWorld* World = (UWorld*)Iter.world().get_context();
+
+				//kinda wish we just split position and rotation into their own comps (grumble grumble...)
+				//BulletTransform.CurrentTransform = FTransform(Transform->CurrentTransform.GetRotation(),HitResult.ImpactPoint,Transform->CurrentTransform.GetScale3D());
+				Iter.entity(i).disable<FECSRayCast>();
+
+				Iter.entity(i).set<FECSBulletHit>({Raycast[i].HitResult});
+     			
+			}
+		}
 	}
 	
 	void QueryAsyncRayCasts(flecs::iter Iter,FECSRayCast*Raycast)
 	{
-		for (auto i : Iter)
-     		{
-     			if(Raycast[i].HitResult.bBlockingHit)
-     			{
-     				UWorld* World = (UWorld*)Iter.world().get_context();
 
-     				//kinda wish we just split position and rotation into their own comps (grumble grumble...)
-     				//BulletTransform.CurrentTransform = FTransform(Transform->CurrentTransform.GetRotation(),HitResult.ImpactPoint,Transform->CurrentTransform.GetScale3D());
-     				Iter.entity(i).set<FECSBulletHit>({Raycast[i].HitResult});
-     			
-     			}
-     		}
 
 	}
 
@@ -191,10 +195,11 @@ namespace FProjectileSimpleSim
 	{
 		Transform.CurrentTransform.SetTranslation(BulletHit.HitResult.ImpactPoint);
 		//this is gross, unsure how we want to define and handle "hits"
+		e.remove<FECSBulletHit>();
+		e.remove<FECSBulletVelocity>();
+		e.remove<FECSRayCast>();
+
 		e.destruct();
-		// e.remove<FECSBulletVelocity>();
-		// e.remove<FECSRayCast>();
-		// e.remove<FECSBulletHit>();
 
 	}
 	
