@@ -47,8 +47,6 @@ void UECSWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			Modules.GetDefaultObject()->FinishInitialize(ECSWorld);
 		}
 	}
-
-	
 }
 
 void UECSWorldSubsystem::Deinitialize()

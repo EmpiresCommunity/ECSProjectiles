@@ -20,7 +20,6 @@ void UECSProjectileModule_Niagara::InitializeComponents(TSharedPtr<flecs::world>
 #if ECSPROJECTILES_NIAGARA
 	flecs::component<FECSNiagaraComponentHandle>(*World.Get());
 	flecs::component<FECSNiagaraSystemHandle>(*World.Get());
-
 	flecs::component<FECSRNiagaraProjectileManager>(*World.Get());
 	flecs::component<FECSRNiagaraHitsManager>(*World.Get());
 	flecs::component<FECSNiagaraGroupManager>(*World.Get());
@@ -106,20 +105,22 @@ namespace FNiagaraECSSystem
 	{
 		UWorld* World = (UWorld*)Iter.world().get_context();
 		//get our parent FECSNiagaraGroupProjectileHandle
-		auto ParentHandleObject = Iter.term_id(2).object();
-		auto ParentHandle = const_cast<FECSNiagaraSystemHandle*>(ParentHandleObject.get<FECSNiagaraSystemHandle>());
+		const auto ParentHandleObject = Iter.term_id(2).object();
+		const auto ParentHandle = const_cast<FECSNiagaraSystemHandle*>(ParentHandleObject.get<FECSNiagaraSystemHandle>());
 		for (auto i : Iter)
 		{
 			const auto CurrentHitResult = BulletHit[i].HitResult;
-			if(ParentHandle->System.IsValid())
+
+			//this fires when we are garbage collecting (woopsie lol)
+			if(ParentHandle->System->IsValidLowLevel()&& !IsGarbageCollecting())
 			{
 				auto SpawnedSystemComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World,ParentHandle->System.Get(),
 		CurrentHitResult.ImpactPoint,
-		CurrentHitResult.ImpactNormal.ForwardVector.Rotation(),
+				CurrentHitResult.ImpactNormal.ForwardVector.Rotation(),
 			FVector(1.0f),true,true,ENCPoolMethod::None);
 
-				SpawnedSystemComp->SetWorldRotation(CurrentHitResult.Normal.ToOrientationQuat().GetForwardVector().ToOrientationRotator());
-
+				auto DesiredRotation = FQuat(CurrentHitResult.Normal.ToOrientationQuat()*FRotator(-90.0f,.0f,.0f).Quaternion());
+					SpawnedSystemComp->SetWorldRotation(DesiredRotation);
 			}
 		}
 
