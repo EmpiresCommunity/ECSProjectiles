@@ -86,8 +86,6 @@ namespace FProjectileSimpleSim
 			
 			
 		}
-
-
 		//Set the final position
 
 		tform.CurrentTransform = FTransform((DesiredDestination - tform.PreviousTransform.GetLocation()).GetSafeNormal().ToOrientationQuat(), DesiredDestination, tform.CurrentTransform.GetScale3D());
@@ -141,11 +139,7 @@ namespace FProjectileSimpleSim
 				UWorld* World = (UWorld*)Iter.world().get_context();
 		
 				//kinda wish we just split position and rotation into their own comps (grumble grumble...)
-				//BulletTransform.CurrentTransform = FTransform(Transform->CurrentTransform.GetRotation(),HitResult.ImpactPoint,Transform->CurrentTransform.GetScale3D());
-				//Iter.entity(i).disable<FECSRayCast>();
-				
-				UE_LOG(LogTemp,Warning,TEXT("Trace hit %i"),GFrameCounter);
-				
+				//BulletTransform.CurrentTransform = FTransform(Transform->CurrentTransform.GetRotation(),HitResult.ImpactPoint,Transform->CurrentTransform.GetScale3D());							
 				Iter.entity(i).set<FECSBulletHit>({Raycast[i].HitResult});
 			}
 		}
@@ -157,7 +151,6 @@ namespace FProjectileSimpleSim
 	}
 	void BulletHitOnAdd(flecs::entity e,FECSBulletHit& Raycast)
 	{
-		UE_LOG(LogTemp,Warning,TEXT("hitcomp added %i"),GFrameCounter);
 
 		
 	}
@@ -195,14 +188,10 @@ namespace FProjectileSimpleSim
 	void StopHitBullets(flecs::entity e, FECSBulletTransform& Transform ,FECSBulletVelocity& Velocity, FECSBulletHit& BulletHit)
 	{
 		Transform.CurrentTransform.SetTranslation(BulletHit.HitResult.ImpactPoint);
-		//this is gross, unsure how we want to define and handle "hits"
-		UE_LOG(LogTemp,Warning,TEXT("Trace hit handled %i"),GFrameCounter);
-
+		//definitely need to spawn an entity for it at some point
+		//or even an event buffer on a component/entity/object somewhere else
 			e.remove<FECSBulletVelocity>();
 			e.remove<FECSBulletHit>();
-
-			//e.destruct();
-
 	}
 	void BulletDebugPrint(flecs::entity e, FECSBulletTransform& Transform)
 	{
@@ -227,7 +216,7 @@ namespace FProjectileSimpleSim
 					outputstring += FString(id.relation().name().c_str()  );
 					outputstring += FString(id.object().name().c_str()  );
 
-					
+			
 				} else {
 					outputstring += FString(id.object().name().c_str());
 				}
@@ -237,9 +226,7 @@ namespace FProjectileSimpleSim
 
 
 		DrawDebugString(World,Transform.CurrentTransform.GetTranslation(),outputstring,0,FColor::White,0,true);
-
 	}
-	
 }
 
 
