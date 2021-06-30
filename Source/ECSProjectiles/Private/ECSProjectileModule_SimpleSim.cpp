@@ -20,6 +20,7 @@ void UECSProjectileModule_SimpleSim::InitializeComponents(TSharedPtr<flecs::worl
 	flecs::component<FECSRayCast>(*World.Get());
 	flecs::component<FECSBulletGravity>(*World.Get());
 	flecs::component<FECSBulletRicochet>(*World.Get());
+	flecs::component<FECSDebugTag>(*World.Get());
 
 }
 
@@ -203,6 +204,41 @@ namespace FProjectileSimpleSim
 			//e.destruct();
 
 	}
+	void BulletDebugPrint(flecs::entity e, FECSBulletTransform& Transform)
+	{
+
+		UWorld* World = (UWorld*)e.world().get_context();
+
+		FString outputstring;
+		e.each([&](flecs::entity& id) {
+				// Skip IsA relations
+				if (id.has_relation(flecs::IsA)) {
+					return;
+				}
+
+				// Print role, if id has one
+				if (id.has_role()) {
+					outputstring += FString(id.role_str().c_str());
+			
+				}
+
+				// Print relation, if id has one
+				if (id.is_pair()) {
+					outputstring += FString(id.relation().name().c_str()  );
+					outputstring += FString(id.object().name().c_str()  );
+
+					
+				} else {
+					outputstring += FString(id.object().name().c_str());
+				}
+
+			outputstring += LINE_TERMINATOR;
+			});
+
+
+		DrawDebugString(World,Transform.CurrentTransform.GetTranslation(),outputstring,0,FColor::White,0,true);
+
+	}
 	
 }
 
@@ -245,7 +281,10 @@ void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> 
 
 		World->system<FECSBulletTransform,FECSBulletVelocity,FECSBulletHit,FECSBulletRicochet>("Handle ricochet hits")
 			.iter(&FProjectileSimpleSim::HandleRicochetHits);
-
+		
+		World->system<FECSBulletTransform>("debug printing in world weeeeeeeeee")
+			.term<FECSDebugTag>()
+			.each(&FProjectileSimpleSim::BulletDebugPrint);
 
 
 	}

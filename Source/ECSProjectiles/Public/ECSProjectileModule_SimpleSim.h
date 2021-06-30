@@ -11,6 +11,7 @@ struct FECSBulletTransform
 	FTransform CurrentTransform;
 	FTransform PreviousTransform;
 };
+struct FECSDebugTag{};
 
 struct FECSBulletVelocity
 {
