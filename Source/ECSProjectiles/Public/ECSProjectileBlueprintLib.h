@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 
 #include "ECSProjectileModule_Niagara.h"
+#include "ECSProjectileModule_SimpleSim.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "MegaFLECSTypes.h"
 #include "NiagaraComponent.h"
@@ -24,7 +25,8 @@ public:
 	FECSEntityHandle SpawnECSBullet(UObject* WorldContextObject, FTransform SpawnTransform, float Velocity,
 	                                TSubclassOf<AActor> ProjectileActor);
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
-	static FECSEntityHandle SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject, FECSEntityHandle NiagaraProjectilesEntityId, FECSEntityHandle NiagaraHitsEntityId, FTransform
+	static FECSEntityHandle SpawnECSBulletNiagaraGrouped(UObject* WorldContextObject, FECSGASEffectPayload EffectPayload, FECSEntityHandle NiagaraProjectilesEntityId, FECSEntityHandle
+	                                                     NiagaraHitsEntityId, FTransform
 	                                                     SpawnTransform, float Velocity = 600.0f, bool
 	                                                     bShouldRicochet = false, bool bGroupedHits = false);
 

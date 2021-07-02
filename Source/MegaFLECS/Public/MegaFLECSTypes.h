@@ -23,4 +23,6 @@ public:
 
 
 	flecs::entity Entity;
+
+	int32 EntityIDInt() const {return Entity.id();}
 };

@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "MegaFLECSTypes.h"
 #include "ECSProjectileWorldSubsystem.generated.h"
+
 
 /**
  * 
@@ -16,5 +18,10 @@ class ECSPROJECTILES_API UECSProjectileWorldSubsystem : public UWorldSubsystem
 public:
 
 	AActor* NiagaraManager;
+
+	UPROPERTY(BlueprintReadWrite)
+	FECSEntityHandle DefaultNiagaraProjectileManager;
+	UPROPERTY(BlueprintReadWrite)
+	FECSEntityHandle DefaultNiagaraHitsManager;
 	
 };

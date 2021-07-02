@@ -71,6 +71,8 @@ namespace FNiagaraECSSystem
 
 		 ParallelFor(Iter.count(), [&](int32 index)
 		 {
+
+		 	
 		 	auto& CurrentTransform = BulletTransform[index];
 		
 		 	PositionArrayDirect[index + ParentHandle->IteratorOffset - Iter.count()] = CurrentTransform.CurrentTransform.GetTranslation();
@@ -112,13 +114,13 @@ namespace FNiagaraECSSystem
 			const auto CurrentHitResult = BulletHit[i].HitResult;
 
 			//this fires when we are garbage collecting (woopsie lol)
-			if(ParentHandle->System->IsValidLowLevel()&& !IsGarbageCollecting())
+			if(ParentHandle->System.IsValid() && !IsGarbageCollecting())
 			{
 				auto SpawnedSystemComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World,ParentHandle->System.Get(),
 		CurrentHitResult.ImpactPoint,
 				CurrentHitResult.ImpactNormal.ForwardVector.Rotation(),
-			FVector(1.0f),true,true,ENCPoolMethod::None);
-
+			FVector(1.0f),true,true,ENCPoolMethod::AutoRelease);
+		
 				auto DesiredRotation = FQuat(CurrentHitResult.Normal.ToOrientationQuat()*FRotator(-90.0f,.0f,.0f).Quaternion());
 					SpawnedSystemComp->SetWorldRotation(DesiredRotation);
 			}
@@ -133,9 +135,6 @@ namespace FNiagaraECSSystem
 			SetNiagaraVectorArray(Handle.Component.Get(),Handle.FirstParameterName,Handle.FirstArray);
 			SetNiagaraVectorArray(Handle.Component.Get(),Handle.SecondParameterName,Handle.SecondArray);
 		}
-		Handle.FirstArray.Empty();
-		Handle.SecondArray.Empty();
-
 		Handle.IteratorOffset = 0;
 	}
 
@@ -162,7 +161,7 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 		.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
 	
 	World->system<FECSBulletHit>("SpawnProjectile Hits FX component")
-		.kind(flecs::UnSet)
+		.kind(flecs::OnSet)
 		.term<FECSRNiagaraHitFX>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::NiagaraHitFX);
 

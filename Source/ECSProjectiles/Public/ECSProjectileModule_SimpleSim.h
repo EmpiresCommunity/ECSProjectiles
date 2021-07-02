@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "ECSModule.h"
+#include "GameplayTagContainer.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "ECSProjectileModule_SimpleSim.generated.h"
 
 struct FECSBulletTransform
@@ -31,20 +33,34 @@ struct FECSBulletHit
 {
 	FHitResult HitResult;
 };
+//regular actor that reports back and is managed by the ECS world
 struct FECSActorEntity
 {
 	TSoftObjectPtr<AActor> Actor;
 };
-
+//who is responsible for spawning this entity (not a managed actor)
+struct FECSSpawnInstigator
+{
+	TSoftObjectPtr<AActor> Actor;
+};
 //custom downward gravity speed for gameplay ballistics
 struct FECSBulletGravity
 {
 	float GravityZ;
 };
-//an "event" that is just a component representing the hit normal.
-//I guess there's no reason we can't just stuff the entire hitresult in there?
-//could make our own ECShitresult without the chaff if we want to stay ~Data Oriented~ and keep it small
 
+//WHO LIKES HUNGARIAN NOTATION?? I LIKE HUNGARIAN TYPING!!!
+USTRUCT(BlueprintType)
+struct FECSGASEffectPayload
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag HitGameplayCue;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag EventToFireOnImpact;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayEventData OnHitEventData;
+};
 /**
  * 
  */

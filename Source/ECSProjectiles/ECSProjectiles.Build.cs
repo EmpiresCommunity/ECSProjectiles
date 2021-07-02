@@ -24,6 +24,8 @@ public class ECSProjectiles : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"GameplayAbilities",
+				"GameplayTags",
 				"MegaFLECS",
 			});
 

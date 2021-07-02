@@ -3,6 +3,7 @@
 
 #include "ECSProjectileModule_SimpleSim.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "flecs.h"
 #include "ECSProjectileDeveloperSettings.h"
@@ -159,6 +160,7 @@ namespace FProjectileSimpleSim
 	{
 		for (auto i : Iter)
 		{
+				//stop the bullet from being handled by another raycast hit event system
 				Iter.entity(i).remove<FECSBulletHit>();
 
 				FHitResult HitResult = Hit[i].HitResult;
@@ -184,6 +186,29 @@ namespace FProjectileSimpleSim
 				BulletTransform.CurrentTransform.SetTranslation(ReflectionPosition);
 				BulletTransform.PreviousTransform.SetTranslation(ReflectionPosition-BulletVecocity.Velocity);
 		}
+	}
+	void BulletHitEvent(flecs::entity e,FECSBulletHit& BulletHit, FECSGASEffectPayload& EffectSpec, FECSSpawnInstigator&Instigator,FECSBulletVelocity&Velocity)
+	{
+		auto OnHitEventData = EffectSpec.OnHitEventData;
+		if (IsValid(BulletHit.HitResult.GetActor()))
+		{
+			
+			OnHitEventData.Target = BulletHit.HitResult.GetActor();
+			OnHitEventData.Instigator = Instigator.Actor.Get();
+			OnHitEventData.EventMagnitude = Velocity.Velocity.Size();
+
+			FGameplayAbilityTargetData_SingleTargetHit* TargetDataPtr = new FGameplayAbilityTargetData_SingleTargetHit();
+			TargetDataPtr->HitResult = BulletHit.HitResult;
+			FGameplayAbilityTargetDataHandle TargetData = FGameplayAbilityTargetDataHandle(TargetDataPtr);	//The Handle uses a TSharedPtr and will clean up the TargetDataPtr
+			OnHitEventData.TargetData = TargetData;
+
+			//do we need to send the ability through here?
+			// OnHitEventData.OptionalObject = OwningAbility;
+			// OnHitEventData.OptionalObject2 = OwningAbility->GetCurrentSourceObject();
+
+			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Instigator.Actor.Get(), EffectSpec.EventToFireOnImpact, OnHitEventData);
+		}
+		
 	}
 	void StopHitBullets(flecs::entity e, FECSBulletTransform& Transform ,FECSBulletVelocity& Velocity, FECSBulletHit& BulletHit)
 	{
@@ -257,19 +282,21 @@ void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> 
 			.iter(&FProjectileSimpleSim::BulletAsyncRayCast);
 		
 		World->system<FECSBulletTransform, FECSBulletVelocity,FECSRayCast>("Async Bullet Collision Raycast query")
-				.each(&FProjectileSimpleSim::BulletAsyncRayCastQuery);
-
+			.each(&FProjectileSimpleSim::BulletAsyncRayCastQuery);
 
 		World->system<FECSBulletHit>().kind(flecs::OnAdd)
-		.each(&FProjectileSimpleSim::BulletHitOnAdd);
-		World->system<FECSBulletTransform,FECSBulletVelocity,FECSBulletHit>("stop hit bullets")
-			.term<FECSBulletRicochet>().oper(flecs::Not)
-			.each(&FProjectileSimpleSim::StopHitBullets);
+			.each(&FProjectileSimpleSim::BulletHitOnAdd);
 
-		World->system<FECSBulletTransform,FECSBulletVelocity,FECSBulletHit,FECSBulletRicochet>("Handle ricochet hits")
+		World->system<FECSBulletHit,FECSGASEffectPayload,FECSSpawnInstigator,FECSBulletVelocity>("Hit event GAS payload")
+		     .each(&FProjectileSimpleSim::BulletHitEvent);
+		
+		World->system<FECSBulletTransform,FECSBulletVelocity,FECSBulletHit,FECSBulletRicochet>("Handle ricochet hits","[out] :FECSBulletHit")
 			.iter(&FProjectileSimpleSim::HandleRicochetHits);
 		
-		World->system<FECSBulletTransform>("debug printing in world weeeeeeeeee")
+		World->system<FECSBulletTransform,FECSBulletVelocity,FECSBulletHit>("Stop hit bullets")
+			.each(&FProjectileSimpleSim::StopHitBullets);
+		
+		World->system<FECSBulletTransform>("Debug printing in world")
 			.term<FECSDebugTag>()
 			.each(&FProjectileSimpleSim::BulletDebugPrint);
 
