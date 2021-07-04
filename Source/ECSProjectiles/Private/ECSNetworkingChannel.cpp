@@ -23,6 +23,22 @@ UECSNetworkingChannel::UECSNetworkingChannel(const FObjectInitializer& ObjectIni
 	FirstRun= true;
 }
 
+void UECSNetworkingChannel::Init(UNetConnection* InConnection, int32 InChIndex, EChannelCreateFlags CreateFlags)
+{
+	Super::Init(InConnection, InChIndex, CreateFlags);
+	if (OpenedLocally)
+	{
+		FOutBunch Bunch(this, false);
+		Bunch.bReliable = true;
+		Bunch.bOpen = true;
+		FECSNetworkMessage<NMECS_Hello>::Pack(Bunch);
+		if (!Bunch.IsError())
+		{
+			SendBunch(&Bunch, true);
+		}
+	}
+}
+
 void UECSNetworkingChannel::ReceivedBunch(FInBunch& Bunch)
 {
 	uint8 MessageType;
@@ -58,25 +74,6 @@ void UECSNetworkingChannel::ReceivedBunch(FInBunch& Bunch)
 
 void UECSNetworkingChannel::Tick()
 {
-	
-}
-
-void UECSNetworkingChannel::SendHello()
-{	
-	FOutBunch Bunch(this, false);
-	Bunch.bReliable = true;
-	if (FirstRun)
-	{
-		Bunch.bOpen = true;
-		FirstRun = false;
-	}
-
-	FECSNetworkMessage<NMECS_Hello>::Pack(Bunch);
-
-	if (!Bunch.IsError())
-	{
-		SendBunch(&Bunch, true);
-	}
 	
 }
 

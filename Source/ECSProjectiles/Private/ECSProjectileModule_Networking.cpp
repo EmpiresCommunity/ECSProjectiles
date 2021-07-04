@@ -47,36 +47,12 @@ namespace FECSNetworkingSystem
 			{
 				for (UNetConnection* Connection : NetDriver->ClientConnections)
 				{
-					if (UECSNetworkingChannel* Chan = UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection))
-					{						
-						Chan->SendHello();
-					}
+					UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection);
 				}				
 			}
 		}
 	}
-
-	void TEMP_SendHello(flecs::iter& itr, FNetworkChannelHandle* ChannelHandles)
-	{
-		UWorld* World = (UWorld*)itr.world().get_context();
-
-		if (!IsValid(World))
-		{
-			return;
-		}
-
-		if (UNetDriver* NetDriver = World->GetNetDriver())
-		{
-			for (UNetConnection* Connection : NetDriver->ClientConnections)
-			{
-				if (UECSNetworkingChannel* Chan = UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection))
-				{
-					Chan->SendHello();
-				}
-			}
-		}
-	}
-
+	
 	template<class Function>
 	static void ForEachNetDriver(UEngine* Engine, const UWorld* const World, const Function InFunction)
 	{
@@ -260,11 +236,7 @@ void UECSProjectileModule_Networking::FinishInitialize(TSharedPtr<flecs::world> 
 		if (bIsServer)
 		{		
 
-			World->set<FECSNetworkingSystem::FNetworkChannelHandle>({});
-
-			World->system< FECSNetworkingSystem::FNetworkChannelHandle>("Send lots of hellos")
-				.interval(2.0f)
-				.iter(&FECSNetworkingSystem::TEMP_SendHello);
+			World->set<FECSNetworkingSystem::FNetworkChannelHandle>({});				
 
 			World->set<FECSNetworkingSystem::FNetworkActorHandle>({});
 		}

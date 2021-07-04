@@ -82,13 +82,12 @@ class ECSPROJECTILES_API UECSNetworkingChannel : public UChannel
 public:
 	UECSNetworkingChannel(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	virtual void Init(UNetConnection* InConnection, int32 InChIndex, EChannelCreateFlags CreateFlags);
 
 	virtual void ReceivedBunch(FInBunch& Bunch) override;
 	virtual void Tick() override;
 
 	virtual bool CanStopTicking() const override { return false; }
-
-	virtual void SendHello();
 
 	bool FirstRun;
 
