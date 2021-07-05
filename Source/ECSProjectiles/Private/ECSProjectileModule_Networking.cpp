@@ -3,7 +3,6 @@
 
 #include "ECSProjectileModule_Networking.h"
 #include "flecs.h"
-#include "ECSProjectilesNetworkingActor.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/NetConnection.h"
 #include "Engine/NetDriver.h"
@@ -19,13 +18,6 @@ namespace FECSProjectiles
 
 namespace FECSNetworkingSystem
 {
-	
-
-	struct FNetworkActorHandle
-	{
-		TWeakObjectPtr<AECSProjectilesNetworkingActor> NetworkActor;
-	};
-
 	struct FNetworkChannelHandle
 	{
 		int32 foo;
@@ -88,25 +80,6 @@ namespace FECSNetworkingSystem
 		NetDriver->ChannelDefinitionMap.Add(FECSProjectiles::NAME_ECSChannel, ECSChannelDefinition);
 	}
 
-	void SpawnNetworkingProxy(flecs::iter& itr, FNetworkActorHandle* ActorHandles)
-	{		
-		UWorld* World = (UWorld*)itr.world().get_context();
-
-		if (!IsValid(World))
-		{
-			return;
-		}
-
-		for (int32 i = 0; i < itr.count(); i++)
-		{
-			//Create the network actor
-			FActorSpawnParameters params;
-			params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			AECSProjectilesNetworkingActor* NetworkingActor = World->SpawnActor<AECSProjectilesNetworkingActor>(params);
-
-			ActorHandles[i].NetworkActor = NetworkingActor;
-		}
-	}
 
 	struct FECSNetworkIdHandle
 	{
@@ -114,66 +87,13 @@ namespace FECSNetworkingSystem
 	};
 
 	void AssignNetworkingHandle(flecs::entity e, FECSNetworkIdHandle& NetworkIdHandle)
-	{
-		const FNetworkActorHandle* ActorHandle = e.world().get<FNetworkActorHandle>();
-
-		if (ActorHandle == nullptr)
-		{
-			return;
-		}
-
-		if (!ActorHandle->NetworkActor.IsValid())
-		{
-			return;
-		}
-
-		AECSProjectilesNetworkingActor* NetworkingActor = ActorHandle->NetworkActor.Get();
-
-		NetworkIdHandle.NetworkArrayIndex = NetworkingActor->ReplicatedEntityArray.Items.Add(FReplicatedProjectileItem());
-		NetworkingActor->ReplicatedEntityArray.MarkArrayDirty();
-
+	{		
 	}
-
-
-	void PackEntitiesForNetworking(flecs::entity e, const FNetworkActorHandle& ActorHandle)
-	{
-		auto query = e.world().query<const FECSNetworkIdHandle>();
-
-		query.iter([ActorHandle](flecs::iter& iterator, const FECSNetworkIdHandle* NetworkIDHandles)
-			{
-				int32 count = iterator.count();
-
-				for (int32 i = 0; i < count; i++)
-				{
-					auto entity = iterator.entity(i);
-					
-					if (entity.has<FECSBulletTransform>())
-					{
-						
-					}
-
-					if (entity.has<FECSBulletVelocity>())
-					{
-
-					}
-
-					//const FECSBulletTransform& TForm = Transforms[i];
-					//const FECSBulletVelocity& Vel = Velocities[i];
-					const FECSNetworkIdHandle& NetId = NetworkIDHandles[i];
-
-					AECSProjectilesNetworkingActor* NetworkActor = ActorHandle.NetworkActor.Get();
-
-					
-
-
-				}
-			});
-	}
+		
 }
 
 void UECSProjectileModule_Networking::InitializeComponents(TSharedPtr<flecs::world> World)
 {
-	flecs::component<FECSNetworkingSystem::FNetworkActorHandle>(*World.Get());
 	flecs::component<FECSNetworkingSystem::FECSNetworkIdHandle>(*World.Get());
 	flecs::component<FECSNetworkingSystem::FNetworkChannelHandle>(*World.Get());
 }
@@ -181,10 +101,6 @@ void UECSProjectileModule_Networking::InitializeComponents(TSharedPtr<flecs::wor
 
 void UECSProjectileModule_Networking::InitializeSystems(TSharedPtr<flecs::world> World)
 {
-	World->system<FECSNetworkingSystem::FNetworkActorHandle>("Spawn Networking Proxy")
-		.kind(flecs::OnSet)
-		.iter(&FECSNetworkingSystem::SpawnNetworkingProxy);
-
 	World->system<FECSNetworkingSystem::FNetworkChannelHandle>("Spawn Network Channel")
 		.kind(flecs::OnSet)
 		.iter(&FECSNetworkingSystem::SpawnReplicationChannel);
@@ -236,9 +152,8 @@ void UECSProjectileModule_Networking::FinishInitialize(TSharedPtr<flecs::world> 
 		if (bIsServer)
 		{		
 
-			World->set<FECSNetworkingSystem::FNetworkChannelHandle>({});				
-
-			World->set<FECSNetworkingSystem::FNetworkActorHandle>({});
+			World->set<FECSNetworkingSystem::FNetworkChannelHandle>({});	
+			
 		}
 
 		
