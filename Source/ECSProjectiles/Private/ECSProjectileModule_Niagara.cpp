@@ -116,13 +116,14 @@ namespace FNiagaraECSSystem
 			//this fires when we are garbage collecting (woopsie lol)
 			if(ParentHandle->System.IsValid() && !IsGarbageCollecting())
 			{
+				auto DesiredRotation = CurrentHitResult.Normal.ToOrientationQuat()*FRotator(-90.0f,.0f,.0f).Quaternion();
+
 				auto SpawnedSystemComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(World,ParentHandle->System.Get(),
 		CurrentHitResult.ImpactPoint,
-				CurrentHitResult.ImpactNormal.ForwardVector.Rotation(),
-			FVector(1.0f),true,true,ENCPoolMethod::AutoRelease);
+				DesiredRotation.Rotator(),
+			FVector(1.0f),true,true,ENCPoolMethod::AutoRelease); 
 		
-				auto DesiredRotation = FQuat(CurrentHitResult.Normal.ToOrientationQuat()*FRotator(-90.0f,.0f,.0f).Quaternion());
-					SpawnedSystemComp->SetWorldRotation(DesiredRotation);
+
 			}
 		}
 
@@ -146,6 +147,13 @@ namespace FNiagaraECSSystem
 void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> World)
 {
 #if ECSPROJECTILES_NIAGARA
+
+	UWorld* UEWorld = (UWorld*)World->get_context();
+	//No rendering on a dedicated server! Shoo!
+	if(UEWorld->GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
 	World->system<FECSNiagaraComponentHandle, FECSBulletTransform>("Write Individual Projectile Positions to Niagara")
 		.kind(flecs::PreStore)
 		.each(&FNiagaraECSSystem::UpdateNiagaraPositions);
@@ -169,5 +177,24 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 		.kind(flecs::PreStore)
 		.each(&FNiagaraECSSystem::PushNiagaraPositionsArray);
 #endif
+
+}
+
+void UECSProjectileModule_Niagara::FinishInitialize(TSharedPtr<flecs::world> World)
+{
+#if ECSPROJECTILES_NIAGARA
+
+	//maybe spawn manager actor stuff here?
+
+
+
+
+
+
+
+
+
+#endif
+
 }
 
