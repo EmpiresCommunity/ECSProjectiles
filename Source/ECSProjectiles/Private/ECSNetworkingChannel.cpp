@@ -16,11 +16,12 @@ IMPLEMENT_ECS_CHANNEL_MESSAGE(DestroyEntity)
 IMPLEMENT_ECS_CHANNEL_MESSAGE(CreateComponent)
 IMPLEMENT_ECS_CHANNEL_MESSAGE(DestroyComponent)
 
+using namespace  FECSNetworkingSystem;
+
 UECSNetworkingChannel::UECSNetworkingChannel(const FObjectInitializer& ObjectInitializer)
 	: UChannel(ObjectInitializer)
 {
 	ChName = FECSProjectiles::NAME_ECSChannel;
-	FirstRun= true;
 }
 
 void UECSNetworkingChannel::Init(UNetConnection* InConnection, int32 InChIndex, EChannelCreateFlags CreateFlags)
@@ -93,4 +94,26 @@ UECSNetworkingChannel* UECSNetworkingChannel::GetOrCreateECSNetworkingChannelFor
 	}
 
 	return nullptr;
+}
+
+void UECSNetworkingChannel::SendNewEntity(FECSNetworkingSystem::FECSNetworkEntityHandle EntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>& ComponentCreationInfos)
+{
+	FOutBunch Bunch(this, false);
+	Bunch.bReliable = true;
+
+	FECSNetworkMessage<NMECS_CreateEntity>::Pack(Bunch, EntityHandle, ComponentCreationInfos);
+
+	if (!Bunch.IsError())
+	{
+		SendBunch(&Bunch, true);
+	}
+}
+
+FArchive& operator<<(FArchive& Ar, FECSNetworkingSystem::FECSNetworkComponetCreationData& ComponentData)
+{
+	Ar<< ComponentData.NetworkHandle;
+	Ar<< ComponentData.ComponentName;
+	Ar<< ComponentData.InitialComponentData;
+
+	return Ar;
 }

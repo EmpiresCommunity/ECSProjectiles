@@ -7,6 +7,24 @@
 #include "Net/DataBunch.h"
 #include "ECSNetworkingChannel.generated.h"
 
+namespace flecs
+{
+	class entity;
+}
+
+namespace FECSNetworkingSystem
+{
+	using FECSNetworkEntityHandle = int64;
+	using FECSNetworkComponentHandle = int32;
+
+	struct FECSNetworkComponetCreationData
+	{
+		FECSNetworkComponentHandle NetworkHandle;
+		FString ComponentName;
+		TArray<uint8> InitialComponentData;
+	};
+}
+
 template<uint8 MessageType> class FECSNetworkMessage
 {
 };
@@ -89,9 +107,9 @@ public:
 
 	virtual bool CanStopTicking() const override { return false; }
 
-	bool FirstRun;
-
 	static UECSNetworkingChannel* GetOrCreateECSNetworkingChannelForConnection(UNetConnection* Conn);
+
+	void SendNewEntity(FECSNetworkingSystem::FECSNetworkEntityHandle EntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>& ComponentCreationInfos);
 
 };
 
@@ -148,12 +166,29 @@ public: \
 
 #define IMPLEMENT_ECS_CHANNEL_MESSAGE(Name) static uint8 Dummy##_FECSNetworkMessage_##Name = FECSNetworkMessage<NMECS_##Name>::Initialize();
 
-using FECSNetworkEntityHandle = uint64;
-using FECSNetworkComponentHandle = uint32;
+namespace FECSNetworkingSystem
+{	
+	struct FECSNetworkIdHandle
+	{
+		FECSNetworkEntityHandle NetworkEntityId = INDEX_NONE;
+	};
+
+	struct FECSNetworkComponentIDHandle
+	{
+		FECSNetworkComponentHandle NetworkedComponentId = INDEX_NONE;
+	};
+}
+
+FArchive& operator<<(FArchive& Ar, FECSNetworkingSystem::FECSNetworkComponetCreationData& ComponentData);
 
 DEFINE_ECS_CHANNEL_MESSAGE(Hello,			0);
-DEFINE_ECS_CHANNEL_MESSAGE(CreateEntity,	1,	FECSNetworkEntityHandle, TArray<FString>, TArray<uint8>);						//Creates a new entity with a given network entity handle, with optional component arrays and data
-DEFINE_ECS_CHANNEL_MESSAGE(UpdateComponent, 2,	FECSNetworkEntityHandle, FECSNetworkComponentHandle, TArray<uint8>);			//Update a component with raw bit data for that component
-DEFINE_ECS_CHANNEL_MESSAGE(DestroyEntity,	3,	FECSNetworkEntityHandle);														//Destroyes an entity
-DEFINE_ECS_CHANNEL_MESSAGE(CreateComponent, 4,	FECSNetworkEntityHandle, FECSNetworkComponentHandle, FString, TArray<uint8>)	//Creates a new component on an entity
-DEFINE_ECS_CHANNEL_MESSAGE(DestroyComponent, 5, FECSNetworkEntityHandle, FECSNetworkComponentHandle)							//Destroys a component on an entity
+//Creates a new entity with a given network entity handle, with optional component arrays and data
+DEFINE_ECS_CHANNEL_MESSAGE(CreateEntity,	1, FECSNetworkingSystem::FECSNetworkEntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>);
+//Update a component with raw bit data for that component
+DEFINE_ECS_CHANNEL_MESSAGE(UpdateComponent, 2, FECSNetworkingSystem::FECSNetworkEntityHandle, FECSNetworkingSystem::FECSNetworkComponentHandle, TArray<uint8>);
+//Destroys an entity
+DEFINE_ECS_CHANNEL_MESSAGE(DestroyEntity,	3, FECSNetworkingSystem::FECSNetworkEntityHandle);		
+//Creates a new component on an entity
+DEFINE_ECS_CHANNEL_MESSAGE(CreateComponent, 4, FECSNetworkingSystem::FECSNetworkEntityHandle, FECSNetworkingSystem::FECSNetworkComponetCreationData);		
+//Destroys a component on an entity
+DEFINE_ECS_CHANNEL_MESSAGE(DestroyComponent, 5, FECSNetworkingSystem::FECSNetworkEntityHandle, FECSNetworkingSystem::FECSNetworkComponentHandle);							

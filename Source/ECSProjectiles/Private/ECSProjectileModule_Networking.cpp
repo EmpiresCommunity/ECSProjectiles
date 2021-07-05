@@ -80,14 +80,85 @@ namespace FECSNetworkingSystem
 		NetDriver->ChannelDefinitionMap.Add(FECSProjectiles::NAME_ECSChannel, ECSChannelDefinition);
 	}
 
-
-	struct FECSNetworkIdHandle
+	template<class Function>
+	void ForEachConnection(const UWorld* const World, const Function InFunction)
 	{
-		int32 NetworkArrayIndex = INDEX_NONE;
-	};
+		if (GEngine == nullptr || World == nullptr)
+		{
+			return;
+		}
+
+		FWorldContext* const Context = GEngine->GetWorldContextFromWorld(World);
+		if (Context != nullptr)
+		{
+			for (FNamedNetDriver& Driver : Context->ActiveNetDrivers)
+			{
+				for (UNetConnection* Connection : Driver.NetDriver->ClientConnections)
+				{
+					InFunction(Connection);
+				}				
+			}
+		}
+	}	
 
 	void AssignNetworkingHandle(flecs::entity e, FECSNetworkIdHandle& NetworkIdHandle)
 	{		
+	}
+
+	void ProcessNetworkedEntities(flecs::iter& itr, FECSNetworkIdHandle* NetworkIdHandles)
+	{
+		UWorld* World = (UWorld*)itr.world().get_context();
+
+		int32 count = itr.count();
+		for (int32 i = 0; i < count; i++)
+		{
+			FECSNetworkIdHandle& NetIdHandle = NetworkIdHandles[i];
+			flecs::entity e = itr.entity(i);
+
+
+			//If the network ID is INDEX_NONE, that means it has not be assigned.  
+			//Assign an id and send it to all clients
+			if (NetIdHandle.NetworkEntityId == INDEX_NONE)
+			{
+				static int32 NetId = 0;
+				NetIdHandle.NetworkEntityId = NetId++;
+
+				TArray< FECSNetworkComponetCreationData> ComponentCreateInfos;
+			
+				//Assign component IDs to this entity's networked components
+				int32 ComponentId = 0;
+				
+				e.each<FECSNetworkComponentIDHandle>([&ComponentId, &e, &ComponentCreateInfos](flecs::entity component) {
+			
+					FECSNetworkComponentIDHandle* id = e.get_mut<FECSNetworkComponentIDHandle>(component);
+					if (id != nullptr && id->NetworkedComponentId == INDEX_NONE)
+					{
+						id->NetworkedComponentId = ComponentId++;
+					}
+
+					FECSNetworkComponetCreationData CreateInfo = ComponentCreateInfos.AddDefaulted_GetRef();
+					CreateInfo.NetworkHandle = id->NetworkedComponentId;
+					CreateInfo.ComponentName = FString(component.name().c_str());
+
+					//TODO: Pack the component data into the ComponentCreateInfo's data struct
+				
+
+				});
+
+				//Send the entity data to all clients
+				ForEachConnection(World, [&NetIdHandle, &ComponentCreateInfos](UNetConnection* Connection)
+				{
+					UECSNetworkingChannel* NetChannel =	UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection);
+
+					//Send this entity
+					NetChannel->SendNewEntity(NetIdHandle.NetworkEntityId, ComponentCreateInfos);
+				});
+			}
+			else
+			{
+				//Get all the networked components and send them to the client
+			}
+		}
 	}
 		
 }
@@ -151,9 +222,7 @@ void UECSProjectileModule_Networking::FinishInitialize(TSharedPtr<flecs::world> 
 		bool bIsServer = WorldPtr->GetNetMode() == NM_DedicatedServer || WorldPtr->GetNetMode() == NM_ListenServer;
 		if (bIsServer)
 		{		
-
-			World->set<FECSNetworkingSystem::FNetworkChannelHandle>({});	
-			
+			World->set<FECSNetworkingSystem::FNetworkChannelHandle>({});				
 		}
 
 		
