@@ -109,14 +109,18 @@ namespace FECSNetworkingSystem
 	{
 		UWorld* World = (UWorld*)itr.world().get_context();
 
+		
+
 		int32 count = itr.count();
+
+
 		for (int32 i = 0; i < count; i++)
 		{
 			FECSNetworkIdHandle& NetIdHandle = NetworkIdHandles[i];
 			flecs::entity e = itr.entity(i);
 
 
-			//If the network ID is INDEX_NONE, that means it has not be assigned.  
+			//If the network ID is INDEX_NONE, that means it has not been assigned.  
 			//Assign an id and send it to all clients
 			if (NetIdHandle.NetworkEntityId == INDEX_NONE)
 			{
@@ -139,10 +143,28 @@ namespace FECSNetworkingSystem
 					FECSNetworkComponetCreationData CreateInfo = ComponentCreateInfos.AddDefaulted_GetRef();
 					CreateInfo.NetworkHandle = id->NetworkedComponentId;
 					CreateInfo.ComponentName = FString(component.name().c_str());
-
+					
 					//TODO: Pack the component data into the ComponentCreateInfo's data struct
-				
 
+					auto name = FString(component.name().c_str());
+					auto componentvalue = e.get(component.object());
+					
+					//the type size is just sizeof'd on every component for now
+					auto size = id->TypeSize;
+
+					UE_LOG(LogECSNetworkSystems, Warning, TEXT("Component type %s sent with length %i"),*name,size);
+
+					CreateInfo.InitialComponentData.AddUninitialized(size);
+
+					//directly copy the data into the array (neat, I should do this in the niagara stuff)
+					FMemory::Memcpy(CreateInfo.InitialComponentData.GetData(), &componentvalue, size);
+	
+					UE_LOG(LogECSNetworkSystems, Warning, TEXT("After array data: %s"),*BytesToHex(CreateInfo.InitialComponentData.GetData(),size));
+					if(name=="FECSBulletTransform")
+					{
+						auto ecstransform = (FECSBulletTransform*)componentvalue;
+						UE_LOG(LogECSNetworkSystems, Warning, TEXT("dereffed FECSBulletTransform type %s"),*ecstransform->CurrentTransform.ToString());
+					}
 				});
 
 				//Send the entity data to all clients
@@ -175,10 +197,15 @@ void UECSProjectileModule_Networking::InitializeSystems(TSharedPtr<flecs::world>
 	World->system<FECSNetworkingSystem::FNetworkChannelHandle>("Spawn Network Channel")
 		.kind(flecs::OnSet)
 		.iter(&FECSNetworkingSystem::SpawnReplicationChannel);
-
+	
 	World->system<FECSNetworkingSystem::FECSNetworkIdHandle>("Assign Network Transport")
 		.kind(flecs::OnSet)
 		.each(&FECSNetworkingSystem::AssignNetworkingHandle);
+	
+
+	World->system<FECSNetworkingSystem::FECSNetworkIdHandle>("Process Networked Entities")
+		.iter(&FECSNetworkingSystem::ProcessNetworkedEntities);
+
 }
 
 void UECSProjectileModule_Networking::FinishInitialize(TSharedPtr<flecs::world> World)

@@ -3,6 +3,7 @@
 
 #include "ECSProjectileBlueprintLib.h"
 
+#include "ECSNetworkingChannel.h"
 #include "ECSProjectileModule_Niagara.h"
 #include "ECSWorldSubsystem.h"
 #include "ECSProjectileModule_SimpleSim.h"
@@ -32,11 +33,15 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
 
-	ECSWorld->defer_begin();
+	//ECSWorld->defer_begin();
 	flecs::entity e = ECSWorld->entity()
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
+		.set<FECSNetworkingSystem::FECSNetworkComponentIDHandle,FECSBulletTransform>({0,sizeof(FECSBulletTransform)})
 		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity })
+		.set<FECSNetworkingSystem::FECSNetworkComponentIDHandle,FECSBulletVelocity>({0,sizeof(FECSBulletVelocity)})
+
 		.set<FECSGASEffectPayload>(EffectPayload)
+		.set<FECSNetworkingSystem::FECSNetworkComponentIDHandle,FECSGASEffectPayload>({0,sizeof(FECSGASEffectPayload)})
 		.set<FECSBulletGravity>({World->GetGravityZ()})
 		.add<FECSRayCast>()
 			//this is an entity pair!
@@ -55,7 +60,8 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	{
 		e.add<FECSRNiagaraHitFX>(NiagaraHitsEntityId.Entity);
 	}
-	ECSWorld->defer_end();
+	e.set<FECSNetworkingSystem::FECSNetworkIdHandle>({INDEX_NONE});
+	//ECSWorld->defer_end();
 
 	return { e };
 }

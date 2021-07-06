@@ -176,6 +176,8 @@ namespace FECSNetworkingSystem
 	struct FECSNetworkComponentIDHandle
 	{
 		FECSNetworkComponentHandle NetworkedComponentId = INDEX_NONE;
+		//Type size in bytes; 
+		int32 TypeSize = 0;
 	};
 }
 
