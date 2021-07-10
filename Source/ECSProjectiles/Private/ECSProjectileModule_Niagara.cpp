@@ -4,8 +4,11 @@
 #include "ECSProjectileModule_Niagara.h"
 
 #include "DrawDebugHelpers.h"
+#include "ECSProjectileDeveloperSettings.h"
 #include "flecs.h"
 #include "ECSProjectileModule_SimpleSim.h"
+#include "ECSProjectileWorldSubsystem.h"
+#include "K2Node_SpawnActorFromClass.h"
 #include "MegaFLECSTypes.h"
 #if ECSPROJECTILES_NIAGARA
 #include "NiagaraComponent.h"
@@ -20,9 +23,9 @@ void UECSProjectileModule_Niagara::InitializeComponents(TSharedPtr<flecs::world>
 #if ECSPROJECTILES_NIAGARA
 	flecs::component<FECSNiagaraComponentHandle>(*World.Get());
 	flecs::component<FECSNiagaraSystemHandle>(*World.Get());
-	flecs::component<FECSRNiagaraProjectileManager>(*World.Get());
-	flecs::component<FECSRNiagaraHitsManager>(*World.Get());
-	flecs::component<FECSNiagaraGroupManager>(*World.Get());
+	flecs::component<FECSRNiagaraProjectileGroupedUEComponent>(*World.Get());
+	flecs::component<FECSRNiagaraHitsUEComponent>(*World.Get());
+	flecs::component<FECSNiagaraGroup>(*World.Get());
 
 #endif
 }
@@ -58,7 +61,7 @@ namespace FNiagaraECSSystem
 		//get our parent FECSNiagaraGroupProjectileHandle
 		auto ParentHandleObject = Iter.term_id(2).object();
 		//
-		auto ParentHandle = const_cast<FECSNiagaraGroupManager*>(ParentHandleObject.get<FECSNiagaraGroupManager>());
+		auto ParentHandle = const_cast<FECSNiagaraGroup*>(ParentHandleObject.get<FECSNiagaraGroup>());
 		ParentHandle->IteratorOffset += Iter.count();
 
 		//TODO: shrink these eventually? could set a system to run ever x seconds etc
@@ -84,7 +87,7 @@ namespace FNiagaraECSSystem
 	{
 		//get our parent FECSNiagaraGroupProjectileHandle
 		auto ParentHandleObject = Iter.term_id(2).object();
-		auto ParentHandle = const_cast<FECSNiagaraGroupManager*>(ParentHandleObject.get<FECSNiagaraGroupManager>());
+		auto ParentHandle = const_cast<FECSNiagaraGroup*>(ParentHandleObject.get<FECSNiagaraGroup>());
 		ParentHandle->IteratorOffset += Iter.count();
 
 		//TODO: shrink these eventually? could set a system to run ever x seconds etc
@@ -128,7 +131,7 @@ namespace FNiagaraECSSystem
 		}
 
 	}
-	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroupManager& Handle)
+	void PushNiagaraPositionsArray(flecs::entity e, FECSNiagaraGroup& Handle)
 	{
 		if (Handle.Component.IsValid())
 		{
@@ -148,9 +151,9 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 {
 #if ECSPROJECTILES_NIAGARA
 
-	UWorld* UEWorld = (UWorld*)World->get_context();
+	UWorld* WorldPtr = (UWorld*)World->get_context();
 	//No rendering on a dedicated server! Shoo!
-	if(UEWorld->GetNetMode() == NM_DedicatedServer)
+	if(WorldPtr->GetNetMode() == NM_DedicatedServer)
 	{
 		return;
 	}
@@ -160,12 +163,12 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 
 	World->system<FECSBulletTransform>("Write Grouped Projectile Positions TArrays")
 		.kind(flecs::PreStore)
-		.term<FECSRNiagaraProjectileManager>(flecs::Wildcard)
+		.term<FECSRNiagaraProjectileGroupedUEComponent>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::UpdateNiagaraPositionsArray);
 	
 	World->system<FECSBulletHit>("Write Grouped Projectile Hits TArrays when set")
 		.kind(flecs::UnSet)
-		.term<FECSRNiagaraHitsManager>(flecs::Wildcard)
+		.term<FECSRNiagaraHitsUEComponent>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::UpdateNiagaraHitsArray);
 	
 	World->system<FECSBulletHit>("SpawnProjectile Hits FX component")
@@ -173,7 +176,7 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 		.term<FECSRNiagaraHitFX>(flecs::Wildcard)
 		.iter(&FNiagaraECSSystem::NiagaraHitFX);
 
-	World->system<FECSNiagaraGroupManager>("Grouped Particle TArrays to Niagara")
+	World->system<FECSNiagaraGroup>("Grouped Particle TArrays to Niagara")
 		.kind(flecs::PreStore)
 		.each(&FNiagaraECSSystem::PushNiagaraPositionsArray);
 #endif
@@ -183,16 +186,18 @@ void UECSProjectileModule_Niagara::InitializeSystems(TSharedPtr<flecs::world> Wo
 void UECSProjectileModule_Niagara::FinishInitialize(TSharedPtr<flecs::world> World)
 {
 #if ECSPROJECTILES_NIAGARA
+	UWorld* WorldPtr = (UWorld*)World->get_context();
 
-	//maybe spawn manager actor stuff here?
+	if(WorldPtr->GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
 
-
-
-
-
-
-
-
+	WorldPtr->OnWorldBeginPlay.AddLambda([WorldPtr]() {
+		const auto ProjectileWorldSubsystem = WorldPtr->GetSubsystem<UECSProjectileWorldSubsystem>();
+		ProjectileWorldSubsystem->ProjectilesNiagaraManagerActor = WorldPtr->SpawnActor<AECSProjectilesNiagaraManager>
+					(GetDefault<UECSProjectileDeveloperSettings>()->NiagaraManagerActor);
+	});
 
 #endif
 

@@ -28,21 +28,28 @@ void UECSProjectileModule_SimpleSim::InitializeComponents(TSharedPtr<flecs::worl
 
 namespace FProjectileSimpleSim
 {
-	void TransformECSPositionToActor(flecs::entity e, FECSBulletTransform& tform, FECSActorEntity& Actor)
-	{
-		if (Actor.Actor.IsValid())
-		{
-			Actor.Actor->SetActorTransform(tform.CurrentTransform);
-		}
-	}
 
 	void TransformActorPostionToECS(flecs::entity e, FECSActorEntity& Actor, FECSBulletTransform& TForm)
 	{
 		if (Actor.Actor.IsValid())
 		{
 			TForm.CurrentTransform = Actor.Actor->GetActorTransform();
+			
 		}
 	}
+
+	void TransformECSPositionToActor(flecs::entity e, FECSBulletTransform& tform, FECSActorEntity& Actor)
+	{
+		if (Actor.Actor.IsValid())
+		{
+			//Simple method
+			//Actor.Actor->SetActorTransform(tform.CurrentTransform);
+			Actor.Actor->GetRootComponent()->SetComponentToWorld(tform.CurrentTransform);
+			Actor.Actor->GetRootComponent()->UpdateBounds();
+			Actor.Actor->GetRootComponent()->MarkRenderStateDirty();
+		}
+	}
+
 
 	void UpdateProjectilePositions(flecs::entity e, FECSBulletTransform& tform, FECSBulletVelocity& velocity)
 	{
@@ -257,12 +264,12 @@ namespace FProjectileSimpleSim
 
 void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> World)
 {
-	World->system<FECSBulletTransform, FECSActorEntity>("Transform ECS Position To Actor")
-		.kind(flecs::PreStore)
-		.each(&FProjectileSimpleSim::TransformECSPositionToActor);
 	World->system<FECSActorEntity, FECSBulletTransform>("Transform Actor Position to ECS")
 		.kind(flecs::PreUpdate)
 		.each(&FProjectileSimpleSim::TransformActorPostionToECS);
+	World->system<FECSBulletTransform, FECSActorEntity>("Transform ECS Position To Actor")
+		.kind(flecs::PreStore)
+		.each(&FProjectileSimpleSim::TransformECSPositionToActor);
 
 
 	if(false)
@@ -299,7 +306,7 @@ void UECSProjectileModule_SimpleSim::InitializeSystems(TSharedPtr<flecs::world> 
 		World->system<FECSBulletTransform>("Debug printing in world")
 			.term<FECSDebugTag>()
 			.each(&FProjectileSimpleSim::BulletDebugPrint);
-
+		
 
 	}
 

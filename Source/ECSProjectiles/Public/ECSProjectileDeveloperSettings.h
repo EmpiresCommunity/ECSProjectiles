@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "ECSProjectilesNiagaraManager.h"
 #include "Engine/DeveloperSettings.h"
 #include "ECSProjectileDeveloperSettings.generated.h"
 
@@ -17,4 +19,7 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, config)
 	TEnumAsByte<ECollisionChannel> ProjectileCollision;
+
+	UPROPERTY(EditDefaultsOnly, config)
+	TSubclassOf<class AECSProjectilesNiagaraManager> NiagaraManagerActor;
 };

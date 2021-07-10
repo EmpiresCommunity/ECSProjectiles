@@ -27,4 +27,6 @@ public:
 	virtual void InitializeSystems(TSharedPtr<flecs::world> World);
 
 	virtual void FinishInitialize(TSharedPtr<flecs::world> World);
+
+	
 };

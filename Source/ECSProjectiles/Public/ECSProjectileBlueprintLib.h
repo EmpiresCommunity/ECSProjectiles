@@ -31,7 +31,7 @@ public:
 	                                                     bShouldRicochet = false, bool bGroupedHits = false);
 
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
-	static FECSEntityHandle SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroupManager NiagaraComponentHandle);
+	static FECSEntityHandle SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroup NiagaraGroupHandle);
 
 	UFUNCTION(BlueprintCallable, Category = "ECSBullet", meta = (WorldContext = "WorldContextObject"))
 	static FECSEntityHandle SetTempNiagaraFxHandleEntity(UObject* WorldContextObject,

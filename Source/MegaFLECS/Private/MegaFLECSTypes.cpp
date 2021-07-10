@@ -9,8 +9,3 @@ FECSEntityHandle::FECSEntityHandle(flecs::entity entity)
 
 }
 
-FECSEntityHandle::FECSEntityHandle(FECSEntityHandle& Other)
-	: Entity(Other.Entity)
-{
-
-}

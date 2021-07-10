@@ -33,6 +33,18 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
 
+	if(!NiagaraProjectilesEntityId.Entity.is_valid())
+	{
+		UE_LOG(LogTemp,Error,TEXT("NiagaraProjectilesEntityId invalid!"))
+		return FECSEntityHandle();
+	}
+
+	if(!NiagaraHitsEntityId.Entity.is_valid())
+	{
+		UE_LOG(LogTemp,Error,TEXT("NiagaraHitsEntityId invalid!"))
+		return FECSEntityHandle();
+	}
+
 	//ECSWorld->defer_begin();
 	flecs::entity e = ECSWorld->entity()
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
@@ -45,7 +57,7 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 		.set<FECSBulletGravity>({World->GetGravityZ()})
 		.add<FECSRayCast>()
 			//this is an entity pair!
-			.add<FECSRNiagaraProjectileManager>(NiagaraProjectilesEntityId.Entity);
+			.add<FECSRNiagaraProjectileGroupedUEComponent>(NiagaraProjectilesEntityId.Entity);
 
 	if(bShouldRicochet)
 	{
@@ -54,7 +66,7 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 
 	if(bGroupedHits)
 	{
-			e.add<FECSRNiagaraHitsManager>(NiagaraHitsEntityId.Entity);
+			e.add<FECSRNiagaraHitsUEComponent>(NiagaraHitsEntityId.Entity);
 	}
 	else
 	{
@@ -66,7 +78,7 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 	return { e };
 }
 
-FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroupManager NiagaraComponentHandle)
+FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject* WorldContextObject, FECSNiagaraGroup NiagaraGroupHandle)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
 	
@@ -74,7 +86,7 @@ FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraManagerEntity(UObject
 	//future: make Niagara handles generic? two different entities? depends on how crazy we get here
 	
 	return GetECSWorld(World)->entity()
-		.set<FECSNiagaraGroupManager>(NiagaraComponentHandle);
+		.set<FECSNiagaraGroup>(NiagaraGroupHandle);
 	
 }
 FECSEntityHandle UECSProjectileBlueprintLib::SetTempNiagaraFxHandleEntity(UObject* WorldContextObject, FECSNiagaraSystemHandle NiagaraSystemHandle)

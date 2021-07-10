@@ -19,9 +19,6 @@ public:
 
 	FECSEntityHandle(flecs::entity entity);
 
-	FECSEntityHandle(FECSEntityHandle& Other);
-
-
 	flecs::entity Entity;
 
 	int32 EntityIDInt() const {return Entity.id();}

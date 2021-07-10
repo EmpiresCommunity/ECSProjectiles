@@ -17,8 +17,8 @@ struct FECSNiagaraComponentHandle
 };
 
 
-struct FECSRNiagaraProjectileManager{};
-struct FECSRNiagaraHitsManager{};
+struct FECSRNiagaraProjectileGroupedUEComponent{};
+struct FECSRNiagaraHitsUEComponent{};
 struct FECSRNiagaraHitFX{};
 
 
@@ -35,7 +35,7 @@ struct FECSNiagaraSystemHandle
 	TWeakObjectPtr<class UNiagaraSystem> System;
 };
 USTRUCT(BlueprintType)
-struct FECSNiagaraGroupManager
+struct FECSNiagaraGroup
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
