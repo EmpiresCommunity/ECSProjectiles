@@ -21,11 +21,11 @@
 void UECSProjectileModule_Niagara::InitializeComponents(TSharedPtr<flecs::world> World)
 {
 #if ECSPROJECTILES_NIAGARA
-	flecs::component<FECSNiagaraComponentHandle>(*World.Get());
-	flecs::component<FECSNiagaraSystemHandle>(*World.Get());
-	flecs::component<FECSRNiagaraProjectileGroupedUEComponent>(*World.Get());
-	flecs::component<FECSRNiagaraHitsUEComponent>(*World.Get());
-	flecs::component<FECSNiagaraGroup>(*World.Get());
+	RegisterComponent<FECSNiagaraComponentHandle>(World);
+	RegisterComponent<FECSNiagaraSystemHandle>(World);
+	RegisterComponent<FECSRNiagaraProjectileGroupedUEComponent>(World);
+	RegisterComponent<FECSRNiagaraHitsUEComponent>(World);
+	RegisterComponent<FECSNiagaraGroup>(World);
 
 #endif
 }

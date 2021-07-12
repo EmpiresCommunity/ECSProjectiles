@@ -4,6 +4,7 @@
 #include "ECSWorldSubsystem.h"
 #include "flecs.h"
 #include "MegaFLECSDeveloperSettings.h"
+#include "MegaFLECSTypes.h"
 #include "ECSModule.h"
 
 UECSWorldSubsystem::UECSWorldSubsystem()
@@ -21,6 +22,10 @@ void UECSWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	ECSWorld = TSharedPtr<flecs::world>(new flecs::world());
 	ECSWorld->set_context(GetWorld());
+
+	flecs::entity e = flecs::component<FECSScriptStructComponent>(*ECSWorld.Get());
+	e.set< FECSScriptStructComponent>({ FECSScriptStructComponent::StaticStruct() });
+
 
 	const UMegaFLECSDeveloperSettings* DevSettings = GetDefault<UMegaFLECSDeveloperSettings>();
 

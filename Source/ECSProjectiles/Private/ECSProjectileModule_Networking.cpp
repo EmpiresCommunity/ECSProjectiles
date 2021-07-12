@@ -187,8 +187,8 @@ namespace FECSNetworkingSystem
 
 void UECSProjectileModule_Networking::InitializeComponents(TSharedPtr<flecs::world> World)
 {
-	flecs::component<FECSNetworkingSystem::FECSNetworkIdHandle>(*World.Get());
-	flecs::component<FECSNetworkingSystem::FNetworkChannelHandle>(*World.Get());
+	RegisterComponent<FECSNetworkingSystem::FECSNetworkIdHandle>(World);
+	RegisterComponent<FECSNetworkingSystem::FNetworkChannelHandle>(World);
 }
 
 

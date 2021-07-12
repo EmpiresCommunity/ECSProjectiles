@@ -13,15 +13,15 @@
 
 void UECSProjectileModule_SimpleSim::InitializeComponents(TSharedPtr<flecs::world> World)
 {
-	flecs::component<FECSBulletHit>(*World.Get());
+	RegisterComponent<FECSBulletHit>(World);
 
-	flecs::component<FECSBulletTransform>(*World.Get());
-	flecs::component<FECSBulletVelocity>(*World.Get());
-	flecs::component<FECSActorEntity>(*World.Get());
-	flecs::component<FECSRayCast>(*World.Get());
-	flecs::component<FECSBulletGravity>(*World.Get());
-	flecs::component<FECSBulletRicochet>(*World.Get());
-	flecs::component<FECSDebugTag>(*World.Get());
+	RegisterComponent<FECSBulletTransform>(World);
+	RegisterComponent<FECSBulletVelocity>(World);
+	RegisterComponent<FECSActorEntity>(World);
+	RegisterComponent<FECSRayCast>(World);
+	RegisterComponent<FECSBulletGravity>(World);
+	RegisterComponent<FECSBulletRicochet>(World);
+	RegisterComponent<FECSDebugTag>(World);
 
 }
 

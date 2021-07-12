@@ -23,3 +23,12 @@ public:
 
 	int32 EntityIDInt() const {return Entity.id();}
 };
+
+USTRUCT()
+struct MEGAFLECS_API FECSScriptStructComponent
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	UScriptStruct* ScriptStruct;
+};
