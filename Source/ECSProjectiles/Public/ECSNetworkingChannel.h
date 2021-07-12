@@ -68,20 +68,20 @@ private:
 	}
 
 	template<typename... ParamTypes>
-	static void ReceiveParams(FInBunch& Bunch, ParamTypes&... Params) {}
+	static void ReceiveParams(FArchive& Bunch, ParamTypes&... Params) {}
 
 	template<typename FirstParamType, typename... ParamTypes>
-	static void ReceiveParams(FInBunch& Bunch, FirstParamType& FirstParam, ParamTypes&... Params)
+	static void ReceiveParams(FArchive& Bunch, FirstParamType& FirstParam, ParamTypes&... Params)
 	{
 		Bunch << FirstParam;
 		ReceiveParams(Bunch, Params...);
 	}
 
 	template<typename... ParamTypes>
-	static void SendParams(FOutBunch& Bunch, ParamTypes&... Params) {}
+	static void SendParams(FArchive& Bunch, ParamTypes&... Params) {}
 
 	template<typename FirstParamType, typename... ParamTypes>
-	static void SendParams(FOutBunch& Bunch, FirstParamType& FirstParam, ParamTypes&... Params)
+	static void SendParams(FArchive& Bunch, FirstParamType& FirstParam, ParamTypes&... Params)
 	{
 		Bunch << FirstParam;
 		SendParams(Bunch, Params...);
@@ -109,9 +109,7 @@ public:
 
 	static UECSNetworkingChannel* GetOrCreateECSNetworkingChannelForConnection(UNetConnection* Conn);
 
-	void SendNewEntity(FECSNetworkingSystem::FECSNetworkEntityHandle EntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>& ComponentCreationInfos);
-
-	void SendEntityToClient(flecs::entity entity, const TArray<flecs::entity>& components);
+	void SendEntityToClient(flecs::entity entity);
 
 };
 
@@ -141,7 +139,7 @@ public: \
 		} \
 	} \
 	template<typename... ParamTypes> \
-	static void Pack(FOutBunch& Bunch, ParamTypes&... Params) \
+	static void Pack(FArchive& Bunch, ParamTypes&... Params) \
 	{ \
 		uint8 MessageType = Index; \
 		Bunch << MessageType; \
@@ -149,13 +147,13 @@ public: \
 	} \
 	/** receives a message of this type from the passed in bunch */ \
 	template<typename... ParamTypes> \
-	UE_NODISCARD static bool Receive(FInBunch& Bunch, ParamTypes&... Params) \
+	UE_NODISCARD static bool Receive(FArchive& Bunch, ParamTypes&... Params) \
 	{ \
 		FECSNetworkMessageInfo::ReceiveParams(Bunch, Params...); \
 		return !Bunch.IsError(); \
 	} \
 	/** throws away a message of this type from the passed in bunch */ \
-	static void Discard(FInBunch& Bunch) \
+	static void Discard(FArchive& Bunch) \
 	{ \
 		TTuple<__VA_ARGS__> Params; \
 		VisitTupleElements([&Bunch](auto& Param) \

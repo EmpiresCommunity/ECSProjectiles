@@ -98,18 +98,6 @@ UECSNetworkingChannel* UECSNetworkingChannel::GetOrCreateECSNetworkingChannelFor
 	return nullptr;
 }
 
-void UECSNetworkingChannel::SendNewEntity(FECSNetworkingSystem::FECSNetworkEntityHandle EntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>& ComponentCreationInfos)
-{
-	FOutBunch Bunch(this, false);
-	Bunch.bReliable = true;
-
-	FECSNetworkMessage<NMECS_CreateEntity>::Pack(Bunch, EntityHandle, ComponentCreationInfos);
-
-	if (!Bunch.IsError())
-	{
-		SendBunch(&Bunch, true);
-	}
-}
 
 bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 {
@@ -150,14 +138,15 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 	}
 	else
 	{
-		FECSNetworkMessage<NMECS_CreateEntity>::Receive(Ar, EHandle, NumComponents);
+		bool bSuccess = FECSNetworkMessage<NMECS_CreateEntity>::Receive(Ar, EHandle, NumComponents);
+		//TODO: check if this is false, throw an error and panic
 	}
 
 	for (int i = 0; i < NumComponents; i++)
 	{
 		FECSNetworkComponentHandle ComponetId;
 		UScriptStruct* ScriptStruct;
-		void* ComponentData;
+		void* ComponentData = nullptr;
 
 		if (Ar.IsSaving())
 		{			
@@ -175,7 +164,7 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 		
 		if (Ar.IsLoading())
 		{
-			static flecs::query StructQuery = e.world().query<FECSScriptStructComponent>();
+			static flecs::query<FECSScriptStructComponent> StructQuery = e.world().query<FECSScriptStructComponent>();
 
 			flecs::entity FoundComponent;
 			StructQuery.each([&FoundComponent, ScriptStruct](flecs::entity e, const FECSScriptStructComponent& StructComp)
@@ -199,61 +188,24 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 
 			ComponentData = e.get_mut(FoundComponent);
 		}
+
+		if (ComponentData == nullptr)
+		{
+			//Panic
+			bOutSuccess = false;
+			return false;
+		}
 		
 		ScriptStruct->GetCppStructOps()->NetSerialize(Ar, Map, bOutSuccess, ComponentData);
 
 	}
+
+	return true;
 }
 
-void UECSNetworkingChannel::SendEntityToClient(flecs::entity entity, const TArray<flecs::entity>& components)
+void UECSNetworkingChannel::SendEntityToClient(flecs::entity entity)
 {
-	//Can't send a non-networkable entity to clients
-	if (!entity.has<FECSNetworkIdHandle>())
-	{
-		return;
-	}
-
-	if (entity.get<FECSNetworkIdHandle>()->NetworkEntityId == INDEX_NONE)
-	{
-		return;
-	}
-
-	FECSNetworkEntityHandle ehandle = entity.get<FECSNetworkIdHandle>()->NetworkEntityId;
-
-	FOutBunch Bunch(this, false);
-	Bunch.bReliable = true;
-	FECSNetworkMessage<NMECS_CreateEntity>::Pack(Bunch, ehandle, components.Num());
-
-	for (flecs::entity compe : components)
-	{
-		//If this entity doesnt have an id, don't replicate it
-		FECSNetworkComponentIDHandle* val = entity.get_mut<FECSNetworkComponentIDHandle>(compe);
-		if (val == nullptr || val->NetworkedComponentId == INDEX_NONE)
-		{
-			continue;
-		}
-
-		FECSScriptStructComponent* sstructcomp = compe.get_mut<FECSScriptStructComponent>();
-
-		if (sstructcomp == nullptr || !IsValid(sstructcomp->ScriptStruct))
-		{
-			continue;
-		}
-
-
-
-		if (!compe.has<FECSScriptStructComponent>())
-		{
-			return;
-		}
-
-		Bunch << val->NetworkedComponentId;
-		Bunch << sstructcomp->ScriptStruct;
-		
-		bool bOutSuccess;
-
-		sstructcomp->ScriptStruct->GetCppStructOps()->NetSerialize(Bunch, Bunch.PackageMap, bOutSuccess, entity.get_mut(compe.object()));
-	}
+	//TODO: make an OutBunch and call NetSerializeEntity, then send it!
 
 }
 

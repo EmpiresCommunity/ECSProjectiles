@@ -168,12 +168,12 @@ namespace FECSNetworkingSystem
 				});
 
 				//Send the entity data to all clients
-				ForEachConnection(World, [&NetIdHandle, &ComponentCreateInfos](UNetConnection* Connection)
+				ForEachConnection(World, [&NetIdHandle, &ComponentCreateInfos, e](UNetConnection* Connection)
 				{
 					UECSNetworkingChannel* NetChannel =	UECSNetworkingChannel::GetOrCreateECSNetworkingChannelForConnection(Connection);
 
 					//Send this entity
-					NetChannel->SendNewEntity(NetIdHandle.NetworkEntityId, ComponentCreateInfos);
+					NetChannel->SendEntityToClient(e);
 				});
 			}
 			else
