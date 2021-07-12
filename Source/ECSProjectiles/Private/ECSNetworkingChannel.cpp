@@ -220,11 +220,12 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 void UECSNetworkingChannel::SendEntityToClient(flecs::entity entity)
 {
 	//TODO: make an OutBunch and call NetSerializeEntity, then send it!
+	bool bSuccess;
 
 	FOutBunch Bunch(this,false);
-	bool bSuccess;
+	Bunch.bReliable = true;
 	NetSerializeEntity(entity,Bunch,Connection->PackageMap,bSuccess);
-	if(bSuccess)
+	if(bSuccess&&!Bunch.IsError())
 	{
 		
 		SendBunch(&Bunch,true);
