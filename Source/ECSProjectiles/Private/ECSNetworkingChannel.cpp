@@ -4,6 +4,8 @@
 #include "ECSNetworkingChannel.h"
 #include "Net/DataBunch.h"
 #include "Engine/NetConnection.h"
+#include "flecs.h"
+#include "MegaFLECSTypes.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogECSNet, Log, All);
 
@@ -108,6 +110,137 @@ void UECSNetworkingChannel::SendNewEntity(FECSNetworkingSystem::FECSNetworkEntit
 		SendBunch(&Bunch, true);
 	}
 }
+
+bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+{
+	int32 NumComponents;
+	FECSNetworkEntityHandle EHandle;
+
+	if (Ar.IsSaving())
+	{
+		const FECSNetworkIdHandle* IdHandle = e.get<FECSNetworkIdHandle>();
+		if (IdHandle == nullptr || IdHandle->NetworkEntityId == INDEX_NONE)
+		{
+			bOutSuccess = false;
+			return false;
+		}
+
+		EHandle = IdHandle->NetworkEntityId;
+	}
+	TArray<flecs::entity> Components;
+	//If we are saving, collect the components to replicate
+	if (Ar.IsSaving())
+	{
+		
+		e.each< FECSNetworkComponentIDHandle>([&e, &Components](flecs::entity component) {
+			const FECSNetworkComponentIDHandle* id = e.get<FECSNetworkComponentIDHandle>(component);
+			if (id != nullptr && id->NetworkedComponentId != INDEX_NONE && e.has<FECSScriptStructComponent>())
+			{
+				Components.Add(component);
+			}
+		});
+
+		NumComponents = Components.Num();
+	}
+
+	//Write the entity create header
+	if (Ar.IsSaving())
+	{
+		FECSNetworkMessage<NMECS_CreateEntity>::Pack(Ar, EHandle, NumComponents);
+	}
+	else
+	{
+		FECSNetworkMessage<NMECS_CreateEntity>::Receive(Ar, EHandle, NumComponents);
+	}
+
+	for (int i = 0; i < NumComponents; i++)
+	{
+
+		FECSNetworkComponentHandle ComponetId;
+		UScriptStruct* ScriptStruct;
+		void* ComponentData;
+
+		if (Ar.IsSaving())
+		{			
+			flecs::entity comp = Components[i];
+			ComponetId = e.get<FECSNetworkComponentIDHandle>()->NetworkedComponentId;
+			ScriptStruct = comp.get<FECSScriptStructComponent>()->ScriptStruct;
+			ComponentData = e.get_mut(comp.object());
+		}
+
+		Ar << ComponetId;
+		Ar << ScriptStruct;
+
+		//TODO: Figure out how to set the component here, mapping it to a proper component.  
+		//Perhaps loop through all the components and find the one with a ScriptStruct that matches what was replicated to us?
+		/*
+		if (Ar.IsLoading())
+		{
+			flecs::entity comp = e.set<Foo>()
+			e.set<Foo, FECSNetworkComponentIDHandle>({ComponetId});
+
+			ComponentData = e.get_mut(comp);
+		}
+		*/
+		ScriptStruct->GetCppStructOps()->NetSerialize(Ar, Map, bOutSuccess, ComponentData);
+
+	}
+
+}
+
+void UECSNetworkingChannel::SendEntityToClient(flecs::entity entity, const TArray<flecs::entity>& components)
+{
+	//Can't send a non-networkable entity to clients
+	if (!entity.has<FECSNetworkIdHandle>())
+	{
+		return;
+	}
+
+	if (entity.get<FECSNetworkIdHandle>()->NetworkEntityId == INDEX_NONE)
+	{
+		return;
+	}
+
+	FECSNetworkEntityHandle ehandle = entity.get<FECSNetworkIdHandle>()->NetworkEntityId;
+
+	FOutBunch Bunch(this, false);
+	Bunch.bReliable = true;
+	FECSNetworkMessage<NMECS_CreateEntity>::Pack(Bunch, ehandle, components.Num());
+
+	for (flecs::entity compe : components)
+	{
+		//If this entity doesnt have an id, don't replicate it
+		FECSNetworkComponentIDHandle* val = entity.get_mut<FECSNetworkComponentIDHandle>(compe);
+		if (val == nullptr || val->NetworkedComponentId == INDEX_NONE)
+		{
+			continue;
+		}
+
+		FECSScriptStructComponent* sstructcomp = compe.get_mut<FECSScriptStructComponent>();
+
+		if (sstructcomp == nullptr || !IsValid(sstructcomp->ScriptStruct))
+		{
+			continue;
+		}
+
+
+
+		if (!compe.has<FECSScriptStructComponent>())
+		{
+			return;
+		}
+
+		Bunch << val->NetworkedComponentId;
+		Bunch << sstructcomp->ScriptStruct;
+		
+		bool bOutSuccess;
+
+		sstructcomp->ScriptStruct->GetCppStructOps()->NetSerialize(Bunch, Bunch.PackageMap, bOutSuccess, entity.get_mut(compe.object()));
+	}
+
+}
+
+
 
 FArchive& operator<<(FArchive& Ar, FECSNetworkingSystem::FECSNetworkComponetCreationData& ComponentData)
 {

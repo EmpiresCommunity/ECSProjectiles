@@ -13,7 +13,8 @@ public class ECSProjectiles : ModuleRules
 			new string[]
 			{
 				"Core",		
-				"DeveloperSettings",				
+				"DeveloperSettings",
+				"MegaFLECS",
 			});
 			
 		
@@ -26,7 +27,6 @@ public class ECSProjectiles : ModuleRules
 				"SlateCore",
 				"GameplayAbilities",
 				"GameplayTags",
-				"MegaFLECS",
 			});
 
 		//If we are using Niagara, enable it here

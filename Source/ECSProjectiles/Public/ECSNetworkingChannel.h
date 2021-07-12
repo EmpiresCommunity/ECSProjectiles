@@ -111,6 +111,8 @@ public:
 
 	void SendNewEntity(FECSNetworkingSystem::FECSNetworkEntityHandle EntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>& ComponentCreationInfos);
 
+	void SendEntityToClient(flecs::entity entity, const TArray<flecs::entity>& components);
+
 };
 
 #define DEFINE_ECS_CHANNEL_MESSAGE(Name, Index, ...) \
@@ -185,7 +187,7 @@ FArchive& operator<<(FArchive& Ar, FECSNetworkingSystem::FECSNetworkComponetCrea
 
 DEFINE_ECS_CHANNEL_MESSAGE(Hello,			0);
 //Creates a new entity with a given network entity handle, with optional component arrays and data
-DEFINE_ECS_CHANNEL_MESSAGE(CreateEntity,	1, FECSNetworkingSystem::FECSNetworkEntityHandle, TArray<FECSNetworkingSystem::FECSNetworkComponetCreationData>);
+DEFINE_ECS_CHANNEL_MESSAGE(CreateEntity,	1, FECSNetworkingSystem::FECSNetworkEntityHandle, int32 /*NumComponents*/);
 //Update a component with raw bit data for that component
 DEFINE_ECS_CHANNEL_MESSAGE(UpdateComponent, 2, FECSNetworkingSystem::FECSNetworkEntityHandle, FECSNetworkingSystem::FECSNetworkComponentHandle, TArray<uint8>);
 //Destroys an entity
