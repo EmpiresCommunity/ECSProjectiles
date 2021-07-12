@@ -104,11 +104,13 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 	int32 NumComponents;
 	FECSNetworkEntityHandle EHandle;
 
+	//If we are writing the packet, the entity should have a Network ID Handle.  We need to write that to the packet
 	if (Ar.IsSaving())
 	{
 		const FECSNetworkIdHandle* IdHandle = e.get<FECSNetworkIdHandle>();
 		if (IdHandle == nullptr || IdHandle->NetworkEntityId == INDEX_NONE)
 		{
+			Ar.SetError(); //If we don't have a network entity id, we can't write this entity.
 			bOutSuccess = false;
 			return false;
 		}
@@ -116,10 +118,9 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 		EHandle = IdHandle->NetworkEntityId;
 	}
 	TArray<flecs::entity> Components;
-	//If we are saving, collect the components to replicate
+	//If we are saving, collect the components to replicate.  If we are loading, we'll read them out of the packet later when we read the header
 	if (Ar.IsSaving())
-	{
-		
+	{		
 		e.each< FECSNetworkComponentIDHandle>([&e, &Components](flecs::entity component) {
 			const FECSNetworkComponentIDHandle* id = e.get<FECSNetworkComponentIDHandle>(component);
 			if (id != nullptr && id->NetworkedComponentId != INDEX_NONE && e.has<FECSScriptStructComponent>())
@@ -131,15 +132,21 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 		NumComponents = Components.Num();
 	}
 
-	//Write the entity create header
+	//Write or read the entity create header, getting the entity handle and the number of compoents
 	if (Ar.IsSaving())
 	{
 		FECSNetworkMessage<NMECS_CreateEntity>::Pack(Ar, EHandle, NumComponents);
 	}
 	else
 	{
+		//Pull the entity handle out of the create packet header and add it to our new entity.  We also grab the number of components from the header here too
 		bool bSuccess = FECSNetworkMessage<NMECS_CreateEntity>::Receive(Ar, EHandle, NumComponents);
+		if (bSuccess)
+		{
+			e.set<FECSNetworkIdHandle>({EHandle});
+		}
 		//TODO: check if this is false, throw an error and panic
+		//TODO SECURITY: Sanity check NumComponents.  It's a full 4 bytes, which may cause buffer overruns with malformed packets.  It's not that big of a deal since it's Server -> Client, but we should still check.
 	}
 
 	for (int i = 0; i < NumComponents; i++)
@@ -150,6 +157,7 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 
 		if (Ar.IsSaving())
 		{			
+			//If we are writing out this packet, grab the component's network id and script struct to write out
 			flecs::entity comp = Components[i];
 			ComponetId = e.get<FECSNetworkComponentIDHandle>()->NetworkedComponentId;
 			ScriptStruct = comp.get<FECSScriptStructComponent>()->ScriptStruct;
@@ -159,11 +167,13 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 		Ar << ComponetId;
 		Ar << ScriptStruct;
 
-		//TODO: Figure out how to set the component here, mapping it to a proper component.  
-		//Perhaps loop through all the components and find the one with a ScriptStruct that matches what was replicated to us?
-		
+		//Create the components for this entity if we are loading.  
+		//We know how many components, their network id, and the ScriptStruct they point to
+		//Now, we need to create each of them, and then deserialize them into the memory allocated by FLECS.  
 		if (Ar.IsLoading())
 		{
+			//Loop through every component registered with the world to find the one that contains the ScriptStruct we are looking for.
+			//TODO: Investigate a better way to cache this query.  
 			static flecs::query<FECSScriptStructComponent> StructQuery = e.world().query<FECSScriptStructComponent>();
 
 			flecs::entity FoundComponent;
@@ -183,15 +193,19 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 				return false;
 			}
 
+			//If we've found the component, add it to this entity (which allocates memory for the component's data)
+			//Also, set up the Network Handle, Component relationship and set the Component Id to this.
 			e.add(FoundComponent);
 			e.set<FECSNetworkComponentHandle>(FoundComponent, {ComponetId});			
 
+			//Get the allocated memory for this component, so NetSerialize below can write to it.
 			ComponentData = e.get_mut(FoundComponent);
 		}
 
 		if (ComponentData == nullptr)
 		{
 			//Panic
+			Ar.SetError();
 			bOutSuccess = false;
 			return false;
 		}
