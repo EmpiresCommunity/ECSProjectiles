@@ -155,7 +155,6 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 
 	for (int i = 0; i < NumComponents; i++)
 	{
-
 		FECSNetworkComponentHandle ComponetId;
 		UScriptStruct* ScriptStruct;
 		void* ComponentData;
@@ -173,19 +172,37 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 
 		//TODO: Figure out how to set the component here, mapping it to a proper component.  
 		//Perhaps loop through all the components and find the one with a ScriptStruct that matches what was replicated to us?
-		/*
+		
 		if (Ar.IsLoading())
 		{
-			flecs::entity comp = e.set<Foo>()
-			e.set<Foo, FECSNetworkComponentIDHandle>({ComponetId});
+			static flecs::query StructQuery = e.world().query<FECSScriptStructComponent>();
 
-			ComponentData = e.get_mut(comp);
+			flecs::entity FoundComponent;
+			StructQuery.each([&FoundComponent, ScriptStruct](flecs::entity e, const FECSScriptStructComponent& StructComp)
+				{
+					if (StructComp.ScriptStruct == ScriptStruct)
+					{
+						FoundComponent = e;
+					}
+				});
+
+			if (!FoundComponent.is_valid())
+			{
+				//Throw an error
+				Ar.SetError();
+				bOutSuccess = false;
+				return false;
+			}
+
+			e.add(FoundComponent);
+			e.set<FECSNetworkComponentHandle>(FoundComponent, {ComponetId});			
+
+			ComponentData = e.get_mut(FoundComponent);
 		}
-		*/
+		
 		ScriptStruct->GetCppStructOps()->NetSerialize(Ar, Map, bOutSuccess, ComponentData);
 
 	}
-
 }
 
 void UECSNetworkingChannel::SendEntityToClient(flecs::entity entity, const TArray<flecs::entity>& components)
