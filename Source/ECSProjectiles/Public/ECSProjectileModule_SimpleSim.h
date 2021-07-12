@@ -8,9 +8,13 @@
 #include "Abilities/GameplayAbilityTypes.h"
 #include "ECSProjectileModule_SimpleSim.generated.h"
 
+USTRUCT(BlueprintType)
 struct FECSBulletTransform
 {
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FTransform CurrentTransform;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FTransform PreviousTransform;
 };
 struct FECSDebugTag{};

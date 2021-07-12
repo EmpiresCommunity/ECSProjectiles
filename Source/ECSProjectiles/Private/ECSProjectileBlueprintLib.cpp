@@ -3,6 +3,7 @@
 
 #include "ECSProjectileBlueprintLib.h"
 
+#include "BlueprintEditor.h"
 #include "ECSNetworkingChannel.h"
 #include "ECSProjectileModule_Niagara.h"
 #include "ECSWorldSubsystem.h"
@@ -47,13 +48,11 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 
 	//ECSWorld->defer_begin();
 	flecs::entity e = ECSWorld->entity()
+		.set<FECSNetworkingSystem::FECSNetworkIdHandle>({INDEX_NONE})
 		.set<FECSBulletTransform>({SpawnTransform, SpawnTransform})
-		.set<FECSNetworkingSystem::FECSNetworkComponentIDHandle,FECSBulletTransform>({0,sizeof(FECSBulletTransform)})
 		.set<FECSBulletVelocity>({ SpawnTransform.GetRotation().GetForwardVector() * Velocity })
-		.set<FECSNetworkingSystem::FECSNetworkComponentIDHandle,FECSBulletVelocity>({0,sizeof(FECSBulletVelocity)})
 
 		.set<FECSGASEffectPayload>(EffectPayload)
-		.set<FECSNetworkingSystem::FECSNetworkComponentIDHandle,FECSGASEffectPayload>({0,sizeof(FECSGASEffectPayload)})
 		.set<FECSBulletGravity>({World->GetGravityZ()})
 		.add<FECSRayCast>()
 			//this is an entity pair!

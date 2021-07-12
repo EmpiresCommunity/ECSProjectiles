@@ -132,7 +132,7 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 		NumComponents = Components.Num();
 	}
 
-	//Write or read the entity create header, getting the entity handle and the number of compoents
+	//Write or read the entity create header, getting the entity handle and the number of components
 	if (Ar.IsSaving())
 	{
 		FECSNetworkMessage<NMECS_CreateEntity>::Pack(Ar, EHandle, NumComponents);
@@ -220,6 +220,15 @@ bool NetSerializeEntity(flecs::entity e, FArchive& Ar, class UPackageMap* Map, b
 void UECSNetworkingChannel::SendEntityToClient(flecs::entity entity)
 {
 	//TODO: make an OutBunch and call NetSerializeEntity, then send it!
+
+	FOutBunch Bunch(this,false);
+	bool bSuccess;
+	NetSerializeEntity(entity,Bunch,Connection->PackageMap,bSuccess);
+	if(bSuccess)
+	{
+		
+		SendBunch(&Bunch,true);
+	}
 
 }
 
