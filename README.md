@@ -6,9 +6,11 @@ The Projectile code works but the networking section is very early on and can't 
 You will certainly need modify code if you want to use this for your game.
 
 ## Quickstart
-After enabling the plugin go to project settings and take note of the new ECS projectiles section. In here you can add the prepacked ECSmodules to the list of enabled modules.
+After enabling the plugin go to project settings and take note of the new MegaFLECS sections. In here you can add the prepacked ECSmodules to the list of enabled modules.
 
-Next up is the SimpleNiagaraManager. This is what sets the AECSProjectilesNiagaraManager BP actor to get spawned by the subsystem and the Niagara Entity ID stuff. This should be set up already unless I broke something.
+**Important**: The projectile subsystem needs to have a AECSProjectilesNiagaraManagerBP set in the ECSProjectileDeveloperSettings for it to spawn in the world!
+This is what sets the AECSProjectilesNiagaraManagerBP actor to get spawned by the subsystem and the default Niagara Entity ID stuff. 
+
 Now you should be able to call the blueprint library function "SpawnECSBulletNiagaraGrouped" and it should spawn a bullet with the default setup at the given location. 
 There is an example in TestBulletSpammer.uasset unless I forgot to hook things up.
 
@@ -38,14 +40,16 @@ For each FECSNiagaraGroup+BulletPositions they are paired with:
 * Stuff their previous frame and current positions into two TArrays and send it to a special Niagara System
 * said Niagara system renders them as GPU particles and spawns/kills particles based on size of the positions TArray. 
 
-Ideally each FECSNiagaraGroup "set" of bullets (fire bullets, ice bullets etc) would have their own FECSNiagaraGroup that they are in a FLECS pair relationship with and set when they spawn. 
-This is how SpawnECSBulletNiagaraGrouped works with the current "default" system. Ideally one would have some way of mapping systems to their entity representations to pair them easily in the editor but I didn't get that far.
+Ideally each FECSNiagaraGroup "set" of bullets (one for all green bullets, one for all red bullets etc) would have their own FECSNiagaraGroup that they are in a FLECS pair relationship with and set when they spawn. 
+This is how SpawnECSBulletNiagaraGrouped works with the current "default" system. Ideally one would have some way of mapping systems to their entity representations to pair them easily in the editor but I didn't get that far. The entire point is to have a small number of NiagaraSystems render hundreds of bullets.
+
+
 
 
 ## Why two arrays?
 They are unorded and otherwise the Niagara particles would essentially have random velocities from other entities.
 
-## What about the hits?
+## What about the hit FX?
 I tried to do the same thing as the regular projectile rendering but for explosions! This would remove the high cost of spawning the explosion effects actors.
 It's definitely possible but a bit more complicated of a Niagara system that I haven't figured out completely. 
 
