@@ -1,7 +1,7 @@
 # ECSProjectiles
 A (someday) Multiplayer ECS-Based Projectile and Ballistics Simulation for UE4
 
-This UE plugin uses an ECS framework (FLECS in our case) to simulate simple ballistic projects that use linetraces to collide with things and Niagara render,
+This experimental UE plugin uses an ECS framework (FLECS in our case) to simulate simple ballistic projects that use linetraces to collide with things and Niagara render,
 The Projectile code works but the networking section is very early on and can't replicate entities yet. 
 You will certainly need modify code if you want to use this for your game.
 
@@ -23,14 +23,14 @@ There are like a few different FLECS integrations for UE4 you can find on here (
 * split code into ECS modules you can easily enable or disable. (pretty simple for now and really needs dependency management)
 * UE4 ScriptStructs paired with each USTRUCTed FLECS component automatically for planned reflection.
 * no editor support at all! 
+* We don't use any of the multithreading features of FLECS itself
 
 The FLECS world is ticked in a UWorldSubsystem by subscribing itself as a tickable delegate.
 
 ## ECSProjectiles modules
 
 ### ECSProjectileModule_SimpleSim
-Super simple ballistics projectile simulation that makes bullets go forward, fall from gravity, and even ricochet off surfaces. Definitely not done.
-
+Super simple ballistics projectile simulation that makes bullets go forward, fall from gravity, and even ricochet off surfaces. Definitely not done. Linetraces are all multithreaded in a simple parralelfor and use collision settings from the project's ECCprojectile settings. 
 ### ECSProjectileModule_Niagara
 This ECSmodule spawns an actor that holds a Niagara system that accepts bullet position arrays to render. 
 There is also some early support for just one Niagara system per bullet but you should probably not do that for anything there is more than 10 of.
@@ -41,15 +41,15 @@ For each FECSNiagaraGroup+BulletPositions they are paired with:
 * said Niagara system renders them as GPU particles and spawns/kills particles based on size of the positions TArray. 
 
 Ideally each FECSNiagaraGroup "set" of bullets (one for all green bullets, one for all red bullets etc) would have their own FECSNiagaraGroup that they are in a FLECS pair relationship with and set when they spawn. 
-This is how SpawnECSBulletNiagaraGrouped works with the current "default" system. Ideally one would have some way of mapping systems to their entity representations to pair them easily in the editor but I didn't get that far. The entire point is to have a small number of NiagaraSystems render hundreds of bullets.
+This is how SpawnECSBulletNiagaraGrouped works with the current "default" system. Ideally one would have some way of mapping systems to their entity representations to pair them easily in the editor but I didn't get that far. The entire point is to have a small number of NiagaraSystems render hundreds of bullets for the entire level!
 
 
 
 
-## Why two arrays?
+#### Why two arrays?
 They are unorded and otherwise the Niagara particles would essentially have random velocities from other entities.
 
-## What about the hit FX?
+#### What about the hit FX?
 I tried to do the same thing as the regular projectile rendering but for explosions! This would remove the high cost of spawning the explosion effects actors.
 It's definitely possible but a bit more complicated of a Niagara system that I haven't figured out completely. 
 
@@ -61,12 +61,12 @@ Scriptstructs paired up with each USTRUCT using FLECS component definition entit
 
 ## Why bother?
 We think ECS stuff is neat and it makes simulation logic like this very simple along with being extremely fast in comparison.
-In tests I have gotten 40k+ bullets running at 16.66ms so I'm pretty happy with that compared to AActor performance.
-I think most game projects should still just use regular UE actors for everything but spawning stuff a dozen times per frame is definitely a situation where it's time to get fancy and apply some DOD tactics.
+In tests I have gotten 40k+ bullets running at 16.66ms so I'm pretty happy with that compared to AActor performance. There are certainly fancier ways to get it even faster but this is already 10x better than anything we will ever need from a frame budget standpoint.
+I think most game projects should still just use regular UE actors for everything but spawning stuff a dozen times per frame is definitely a situation where it's time to get fancy and apply some DOD tactics. 
 
 ## Why FLECS?
 I liked how the C++ API works and it's very easy to integrate because it's written in C internally. 
-There are other options out there for C++ ECS frameworks. At least check out ENTT as well if you are interested in others! 
+There are other options out there for C++ ECS frameworks. At least check out ENTT as well if you are interested in others!
 
 ## What about UE5?!
 Yeah, it could probably run with almost no changes in the current EAs. The hard part will be making sure the Niagara systems don't get mangled somehow. 
