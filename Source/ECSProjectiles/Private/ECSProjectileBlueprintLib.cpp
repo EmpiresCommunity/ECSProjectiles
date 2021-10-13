@@ -3,11 +3,14 @@
 
 #include "ECSProjectileBlueprintLib.h"
 
+#include <ECSProjectilesNiagaraManager.h>
+
 #include "BlueprintEditor.h"
 #include "ECSNetworkingChannel.h"
 #include "ECSProjectileModule_Niagara.h"
 #include "ECSWorldSubsystem.h"
 #include "ECSProjectileModule_SimpleSim.h"
+#include "ECSProjectileWorldSubsystem.h"
 
 FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBullet(UObject* WorldContextObject, FTransform SpawnTransform, float Velocity, TSubclassOf<AActor> ProjectileActor)
 {
@@ -32,18 +35,19 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
                                                                           SpawnTransform, float Velocity, bool bShouldRicochet,bool bGroupedHits)
 {
 	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
+
+	auto ProjectileSubsystem = World->GetSubsystem<UECSProjectileWorldSubsystem>();
 	TSharedPtr<flecs::world> ECSWorld = GetECSWorld(World);
 
 	if(!NiagaraProjectilesEntityId.Entity.is_valid())
 	{
-		UE_LOG(LogTemp,Error,TEXT("NiagaraProjectilesEntityId invalid!"))
-		return FECSEntityHandle();
+		NiagaraProjectilesEntityId.Entity = ProjectileSubsystem->ProjectilesNiagaraManagerActor->DefaultNiagaraProjectileEntityHandle.Entity;
 	}
 
 	if(!NiagaraHitsEntityId.Entity.is_valid())
 	{
-		UE_LOG(LogTemp,Error,TEXT("NiagaraHitsEntityId invalid!"))
-		return FECSEntityHandle();
+		NiagaraHitsEntityId.Entity = ProjectileSubsystem->ProjectilesNiagaraManagerActor->DefaultNiagaraHitExplostionEntityHandle.Entity;
+
 	}
 
 	//ECSWorld->defer_begin();
