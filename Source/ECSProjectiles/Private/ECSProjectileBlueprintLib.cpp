@@ -41,7 +41,10 @@ FECSEntityHandle UECSProjectileBlueprintLib::SpawnECSBulletNiagaraGrouped(UObjec
 
 	if(!NiagaraProjectilesEntityId.Entity.is_valid())
 	{
+		check(ProjectileSubsystem->ProjectilesNiagaraManagerActor)
+		
 		NiagaraProjectilesEntityId.Entity = ProjectileSubsystem->ProjectilesNiagaraManagerActor->DefaultNiagaraProjectileEntityHandle.Entity;
+		
 	}
 
 	if(!NiagaraHitsEntityId.Entity.is_valid())

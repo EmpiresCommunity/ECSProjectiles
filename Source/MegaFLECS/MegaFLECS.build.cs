@@ -14,8 +14,9 @@ public class MegaFLECS : ModuleRules
             "Core",
              "CoreUObject",
              "Engine",
-             "DeveloperSettings",
-        });
+             "DeveloperSettings"
+            
+             } );
 
         PublicIncludePaths.AddRange(new string[] { "FlecsLibrary/Public" });
         PrivateIncludePaths.AddRange(new string[] { "FlecsLibrary/Private" });

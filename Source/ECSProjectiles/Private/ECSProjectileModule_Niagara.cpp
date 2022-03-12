@@ -117,6 +117,7 @@ namespace FNiagaraECSSystem
 			const auto CurrentHitResult = BulletHit[i].HitResult;
 
 			//this fires when we are garbage collecting (woopsie lol)
+			if(!ParentHandle) return;
 			if(ParentHandle->System.IsValid() && !IsGarbageCollecting())
 			{
 				auto DesiredRotation = CurrentHitResult.Normal.ToOrientationQuat()*FRotator(-90.0f,.0f,.0f).Quaternion();

@@ -22,15 +22,15 @@ class ECSPROJECTILES_API AECSProjectilesNiagaraManager : public AActor
 public:
 	AECSProjectilesNiagaraManager();
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UNiagaraSystem* DefaultHitExplosionEffectSystem;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UNiagaraSystem* DefaultNiagaraProjectileGroupSystem;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FECSEntityHandle DefaultNiagaraProjectileEntityHandle;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FECSEntityHandle DefaultNiagaraHitExplostionEntityHandle;
 
 
