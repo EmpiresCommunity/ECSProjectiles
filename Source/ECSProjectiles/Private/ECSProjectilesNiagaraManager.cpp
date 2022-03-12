@@ -20,14 +20,13 @@ void AECSProjectilesNiagaraManager::BeginPlay()
 	Super::BeginPlay();
 
 
-	UNiagaraComponent* DefaultHitExplosionEffectComponent;
 
 	if(DefaultNiagaraProjectileGroupSystem)
 	{
-		DefaultHitExplosionEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(DefaultNiagaraProjectileGroupSystem,GetRootComponent(),
+		DefaultNiagaraProjectileGroupComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(DefaultNiagaraProjectileGroupSystem,GetRootComponent(),
 		FName(),FVector(),FRotator(),EAttachLocation::SnapToTarget,false);
 		FECSNiagaraGroup ProjectileGroup;
-		ProjectileGroup.Component = DefaultHitExplosionEffectComponent;
+		ProjectileGroup.Component = DefaultNiagaraProjectileGroupComponent;
 		ProjectileGroup.FirstParameterName = TEXT("ProjectilePositions");
 		ProjectileGroup.SecondParameterName = TEXT("PrevProjectilePositions");
 
